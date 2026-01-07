@@ -1,0 +1,180 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 24],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- General task",
+      "title_text": "General task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 22],
+      "subtree_span": [8, 22],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "heading",
+      "level": 2,
+      "raw_line": "## Backend",
+      "title_text": "Backend",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["3", "4"],
+      "item_span": [24, 34],
+      "subtree_span": [24, 68],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- API task",
+      "title_text": "API task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [36, 46],
+      "subtree_span": [36, 46],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Database task",
+      "title_text": "Database task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [47, 62],
+      "subtree_span": [47, 62],
+      "line": 8,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 2,
+      "raw_line": "## Frontend",
+      "title_text": "Frontend",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["6"],
+      "item_span": [64, 75],
+      "subtree_span": [64, 88],
+      "line": 10,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "raw_line": "- UI task",
+      "title_text": "UI task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [77, 86],
+      "subtree_span": [77, 86],
+      "line": 12,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Personal",
+      "title_text": "Personal",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["8"],
+      "item_span": [88, 98],
+      "subtree_span": [88, 114],
+      "line": 14,
+      "column": 1
+    },
+    {
+      "id": "8",
+      "type": "list",
+      "raw_line": "- Home task",
+      "title_text": "Home task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [100, 111],
+      "subtree_span": [100, 111],
+      "line": 16,
+      "column": 1
+    },
+    {
+      "id": "9",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [113, 119],
+      "subtree_span": [113, 119],
+      "line": 18,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "2", "5", "7", "9"]
+}

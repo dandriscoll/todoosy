@@ -1,0 +1,109 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 30],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Important task (p0)",
+      "title_text": "Important task",
+      "metadata": {
+        "due": null,
+        "priority": 0,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 29],
+      "subtree_span": [8, 29],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["3", "4", "5"],
+      "item_span": [31, 37],
+      "subtree_span": [31, 86],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Random thought",
+      "title_text": "Random thought",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [39, 55],
+      "subtree_span": [39, 55],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Quick idea",
+      "title_text": "Quick idea",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [56, 68],
+      "subtree_span": [56, 68],
+      "line": 8,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Someday item",
+      "title_text": "Someday item",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [69, 83],
+      "subtree_span": [69, 83],
+      "line": 9,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "2"]
+}

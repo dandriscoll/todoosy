@@ -1,0 +1,92 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 119],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Critical task (due 2026-01-10, p0)",
+      "title_text": "Critical task",
+      "metadata": {
+        "due": "2026-01-10",
+        "priority": 0,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 44],
+      "subtree_span": [8, 44],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- High priority (due 2026-01-10, p1)",
+      "title_text": "High priority",
+      "metadata": {
+        "due": "2026-01-10",
+        "priority": 1,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [45, 81],
+      "subtree_span": [45, 81],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Normal task (due 2026-01-10, p2)",
+      "title_text": "Normal task",
+      "metadata": {
+        "due": "2026-01-10",
+        "priority": 2,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [82, 116],
+      "subtree_span": [82, 116],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [118, 124],
+      "subtree_span": [118, 124],
+      "line": 7,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "4"]
+}

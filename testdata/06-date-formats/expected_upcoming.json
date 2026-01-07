@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "id": "2",
+      "due": "2026-03-20",
+      "priority": null,
+      "path": "Dates > US format",
+      "item_span": [39, 67]
+    },
+    {
+      "id": "1",
+      "due": "2026-04-15",
+      "priority": null,
+      "path": "Dates > ISO format",
+      "item_span": [9, 38]
+    },
+    {
+      "id": "3",
+      "due": "2026-06-15",
+      "priority": null,
+      "path": "Dates > Short year",
+      "item_span": [68, 95]
+    }
+  ]
+}

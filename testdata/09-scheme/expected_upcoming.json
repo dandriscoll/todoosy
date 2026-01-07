@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-01-10",
+      "priority": 0,
+      "priority_label": "Critical",
+      "path": "Work > Critical task",
+      "item_span": [8, 44]
+    },
+    {
+      "id": "2",
+      "due": "2026-01-10",
+      "priority": 1,
+      "priority_label": "High",
+      "path": "Work > High priority",
+      "item_span": [45, 81]
+    },
+    {
+      "id": "3",
+      "due": "2026-01-10",
+      "priority": 2,
+      "priority_label": "Normal",
+      "path": "Work > Normal task",
+      "item_span": [82, 116]
+    }
+  ]
+}

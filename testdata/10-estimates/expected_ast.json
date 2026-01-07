@@ -1,0 +1,109 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 79],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Quick task (15m)",
+      "title_text": "Quick task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": 15
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 27],
+      "subtree_span": [9, 27],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Hour task (2h)",
+      "title_text": "Hour task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": 120
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [28, 44],
+      "subtree_span": [28, 44],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Day task (1d)",
+      "title_text": "Day task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": 480
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [45, 60],
+      "subtree_span": [45, 60],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Multi-day (3d)",
+      "title_text": "Multi-day",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": 1440
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [61, 77],
+      "subtree_span": [61, 77],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [79, 85],
+      "subtree_span": [79, 85],
+      "line": 8,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "5"]
+}

@@ -1,0 +1,272 @@
+/**
+ * Todoosy Tests - Using golden test files
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { parse, format, lint, queryUpcoming, queryMisc, parseScheme } from './index.js';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const testDataDir = path.resolve(__dirname, '../../testdata');
+
+// Get all test case directories
+function getTestCases(): string[] {
+  const dirs = fs.readdirSync(testDataDir);
+  return dirs
+    .filter(d => fs.statSync(path.join(testDataDir, d)).isDirectory())
+    .sort();
+}
+
+function loadFile(testCase: string, filename: string): string | null {
+  const filePath = path.join(testDataDir, testCase, filename);
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, 'utf-8');
+  }
+  return null;
+}
+
+function loadJson(testCase: string, filename: string): unknown | null {
+  const content = loadFile(testCase, filename);
+  if (content) {
+    return JSON.parse(content);
+  }
+  return null;
+}
+
+describe('Todoosy Golden Tests', () => {
+  const testCases = getTestCases();
+
+  describe('Parser', () => {
+    test.each(testCases)('%s - parse', (testCase) => {
+      const input = loadFile(testCase, 'input.md');
+      const expectedAst = loadJson(testCase, 'expected_ast.json');
+
+      if (!input || !expectedAst) {
+        console.warn(`Skipping ${testCase} - missing input or expected_ast`);
+        return;
+      }
+
+      const { ast } = parse(input);
+
+      // Compare items count
+      expect(ast.items.length).toBe((expectedAst as any).items.length);
+
+      // Compare each item's essential properties
+      for (let i = 0; i < ast.items.length; i++) {
+        const actual = ast.items[i];
+        const expected = (expectedAst as any).items[i];
+
+        expect(actual.type).toBe(expected.type);
+        expect(actual.title_text).toBe(expected.title_text);
+        expect(actual.metadata.due).toBe(expected.metadata.due);
+        expect(actual.metadata.priority).toBe(expected.metadata.priority);
+        expect(actual.metadata.estimate_minutes).toBe(expected.metadata.estimate_minutes);
+        expect(actual.comments).toEqual(expected.comments);
+        expect(actual.children.length).toBe(expected.children.length);
+      }
+
+      // Compare root_ids count
+      expect(ast.root_ids.length).toBe((expectedAst as any).root_ids.length);
+    });
+  });
+
+  describe('Formatter', () => {
+    test.each(testCases)('%s - format', (testCase) => {
+      const input = loadFile(testCase, 'input.md');
+      const expectedFormatted = loadFile(testCase, 'expected_formatted.md');
+
+      if (!input || !expectedFormatted) {
+        console.warn(`Skipping ${testCase} - missing input or expected_formatted`);
+        return;
+      }
+
+      const formatted = format(input);
+      expect(formatted).toBe(expectedFormatted);
+    });
+  });
+
+  describe('Linter', () => {
+    test.each(testCases)('%s - lint', (testCase) => {
+      const input = loadFile(testCase, 'input.md');
+      const expectedWarnings = loadJson(testCase, 'expected_warnings.json');
+      const schemeText = loadFile(testCase, 'scheme.md');
+      const scheme = schemeText ? parseScheme(schemeText) : undefined;
+
+      if (!input || !expectedWarnings) {
+        console.warn(`Skipping ${testCase} - missing input or expected_warnings`);
+        return;
+      }
+
+      const result = lint(input, scheme);
+
+      // Compare warning codes
+      const actualCodes = result.warnings.map(w => w.code).sort();
+      const expectedCodes = ((expectedWarnings as any).warnings || []).map((w: any) => w.code).sort();
+      expect(actualCodes).toEqual(expectedCodes);
+    });
+  });
+
+  describe('Query - Upcoming', () => {
+    test.each(testCases)('%s - queryUpcoming', (testCase) => {
+      const input = loadFile(testCase, 'input.md');
+      const expectedUpcoming = loadJson(testCase, 'expected_upcoming.json');
+      const schemeText = loadFile(testCase, 'scheme.md');
+      const scheme = schemeText ? parseScheme(schemeText) : undefined;
+
+      if (!input || !expectedUpcoming) {
+        console.warn(`Skipping ${testCase} - missing input or expected_upcoming`);
+        return;
+      }
+
+      const result = queryUpcoming(input, scheme);
+
+      // Compare items count
+      expect(result.items.length).toBe((expectedUpcoming as any).items.length);
+
+      // Compare each item
+      for (let i = 0; i < result.items.length; i++) {
+        const actual = result.items[i];
+        const expected = (expectedUpcoming as any).items[i];
+
+        expect(actual.due).toBe(expected.due);
+        expect(actual.priority).toBe(expected.priority);
+        if (expected.priority_label) {
+          expect(actual.priority_label).toBe(expected.priority_label);
+        }
+      }
+    });
+  });
+
+  describe('Query - Misc', () => {
+    test.each(testCases)('%s - queryMisc', (testCase) => {
+      const input = loadFile(testCase, 'input.md');
+      const expectedMisc = loadJson(testCase, 'expected_misc.json');
+
+      if (!input || !expectedMisc) {
+        console.warn(`Skipping ${testCase} - missing input or expected_misc`);
+        return;
+      }
+
+      const result = queryMisc(input);
+
+      // Compare items count
+      expect(result.items.length).toBe((expectedMisc as any).items.length);
+
+      // Compare each item title
+      for (let i = 0; i < result.items.length; i++) {
+        const actual = result.items[i];
+        const expected = (expectedMisc as any).items[i];
+
+        expect(actual.title_text).toBe(expected.title_text);
+      }
+    });
+  });
+
+  describe('Scheme Parser', () => {
+    test.each(testCases)('%s - parseScheme', (testCase) => {
+      const schemeText = loadFile(testCase, 'scheme.md');
+      const expectedScheme = loadJson(testCase, 'expected_scheme.json');
+
+      if (!schemeText || !expectedScheme) {
+        // Scheme is optional
+        return;
+      }
+
+      const scheme = parseScheme(schemeText);
+
+      expect(scheme.timezone).toBe((expectedScheme as any).timezone);
+      expect(scheme.priorities).toEqual((expectedScheme as any).priorities);
+    });
+  });
+});
+
+// Additional unit tests for edge cases
+describe('Parser Edge Cases', () => {
+  test('handles empty document', () => {
+    const { ast } = parse('');
+    expect(ast.items).toHaveLength(0);
+    expect(ast.root_ids).toHaveLength(0);
+  });
+
+  test('handles document with only whitespace', () => {
+    const { ast } = parse('   \n\n   ');
+    expect(ast.items).toHaveLength(0);
+  });
+
+  test('parses numbered lists', () => {
+    const { ast } = parse('# Tasks\n\n1. First task\n2. Second task');
+    expect(ast.items).toHaveLength(3);
+    expect(ast.items[1].title_text).toBe('First task');
+    expect(ast.items[2].title_text).toBe('Second task');
+  });
+
+  test('parses asterisk lists', () => {
+    const { ast } = parse('# Tasks\n\n* Task one\n* Task two');
+    expect(ast.items).toHaveLength(3);
+    expect(ast.items[1].title_text).toBe('Task one');
+  });
+
+  test('normalizes 2-digit year dates', () => {
+    const { ast } = parse('- Task (due 01/15/26)');
+    expect(ast.items[0].metadata.due).toBe('2026-01-15');
+  });
+
+  test('handles estimate with days', () => {
+    const { ast } = parse('- Task (2d)');
+    expect(ast.items[0].metadata.estimate_minutes).toBe(960);
+  });
+});
+
+describe('Formatter Edge Cases', () => {
+  test('adds Misc section if missing', () => {
+    const formatted = format('# Work\n\n- Task');
+    expect(formatted).toContain('# Misc');
+  });
+
+  test('preserves non-metadata parentheses', () => {
+    const input = '# Work\n\n- Call John (CEO)\n\n# Misc\n';
+    const formatted = format(input);
+    expect(formatted).toContain('(CEO)');
+  });
+});
+
+describe('Linter Edge Cases', () => {
+  test('warns on missing Misc section', () => {
+    const result = lint('# Work\n\n- Task');
+    expect(result.warnings.some(w => w.code === 'MISC_MISSING')).toBe(true);
+  });
+
+  test('no warnings on valid document', () => {
+    const result = lint('# Work\n\n- Task (due 2026-01-15 p1 2h)\n\n# Misc\n');
+    expect(result.warnings).toHaveLength(0);
+  });
+});
+
+describe('Scheme Parser Edge Cases', () => {
+  test('handles empty scheme', () => {
+    const scheme = parseScheme('');
+    expect(scheme.timezone).toBeNull();
+    expect(scheme.priorities).toEqual({});
+  });
+
+  test('handles scheme with only timezone', () => {
+    const scheme = parseScheme('# Timezone\n\nEurope/London');
+    expect(scheme.timezone).toBe('Europe/London');
+    expect(scheme.priorities).toEqual({});
+  });
+
+  test('handles various bullet formats', () => {
+    const scheme = parseScheme(`
+# Priorities
+
+- P0 - Critical
+* P1 - High
+P2 - Medium
+`);
+    expect(scheme.priorities['0']).toBe('Critical');
+    expect(scheme.priorities['1']).toBe('High');
+    expect(scheme.priorities['2']).toBe('Medium');
+  });
+});

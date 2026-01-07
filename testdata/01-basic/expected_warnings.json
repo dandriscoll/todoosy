@@ -1,0 +1,11 @@
+{
+  "warnings": [
+    {
+      "code": "MISC_MISSING",
+      "message": "Document is missing required '# Misc' section",
+      "line": null,
+      "column": null,
+      "span": null
+    }
+  ]
+}

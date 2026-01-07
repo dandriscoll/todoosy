@@ -1,0 +1,92 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Dates",
+      "title_text": "Dates",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 98],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- ISO format (due 2026-04-15)",
+      "title_text": "ISO format",
+      "metadata": {
+        "due": "2026-04-15",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 38],
+      "subtree_span": [9, 38],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- US format (due 03/20/2026)",
+      "title_text": "US format",
+      "metadata": {
+        "due": "2026-03-20",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [39, 67],
+      "subtree_span": [39, 67],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Short year (due 06/15/26)",
+      "title_text": "Short year",
+      "metadata": {
+        "due": "2026-06-15",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [68, 95],
+      "subtree_span": [68, 95],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [97, 103],
+      "subtree_span": [97, 103],
+      "line": 7,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "4"]
+}

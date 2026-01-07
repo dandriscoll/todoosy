@@ -1,0 +1,219 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [
+        "Sprint tasks for this week."
+      ],
+      "children": ["1", "2"],
+      "item_span": [0, 36],
+      "subtree_span": [0, 131],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Deploy hotfix (due 2026-01-07, p0, 1h)",
+      "title_text": "Deploy hotfix",
+      "metadata": {
+        "due": "2026-01-07",
+        "priority": 0,
+        "estimate_minutes": 60
+      },
+      "comments": [
+        "Critical security patch."
+      ],
+      "children": [],
+      "item_span": [38, 104],
+      "subtree_span": [38, 104],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Code review (p2, 2h)",
+      "title_text": "Code review",
+      "metadata": {
+        "due": null,
+        "priority": 2,
+        "estimate_minutes": 120
+      },
+      "comments": [
+        "Review Sarah's PR."
+      ],
+      "children": [],
+      "item_span": [105, 149],
+      "subtree_span": [105, 149],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "heading",
+      "level": 2,
+      "raw_line": "## Backend",
+      "title_text": "Backend",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["4", "5"],
+      "item_span": [151, 161],
+      "subtree_span": [151, 218],
+      "line": 10,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Optimize database queries (p2, 4h)",
+      "title_text": "Optimize database queries",
+      "metadata": {
+        "due": null,
+        "priority": 2,
+        "estimate_minutes": 240
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [163, 199],
+      "subtree_span": [163, 199],
+      "line": 12,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Add caching layer (p3, 1d)",
+      "title_text": "Add caching layer",
+      "metadata": {
+        "due": null,
+        "priority": 3,
+        "estimate_minutes": 480
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [200, 228],
+      "subtree_span": [200, 228],
+      "line": 13,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Personal",
+      "title_text": "Personal",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["7", "8"],
+      "item_span": [230, 240],
+      "subtree_span": [230, 281],
+      "line": 15,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "list",
+      "raw_line": "- Gym (due 01/08/26)",
+      "title_text": "Gym",
+      "metadata": {
+        "due": "2026-01-08",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [242, 262],
+      "subtree_span": [242, 262],
+      "line": 17,
+      "column": 1
+    },
+    {
+      "id": "8",
+      "type": "list",
+      "raw_line": "- Read book (p3)",
+      "title_text": "Read book",
+      "metadata": {
+        "due": null,
+        "priority": 3,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [263, 279],
+      "subtree_span": [263, 279],
+      "line": 18,
+      "column": 1
+    },
+    {
+      "id": "9",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["10", "11"],
+      "item_span": [281, 287],
+      "subtree_span": [281, 340],
+      "line": 20,
+      "column": 1
+    },
+    {
+      "id": "10",
+      "type": "list",
+      "raw_line": "- Look into new todo apps",
+      "title_text": "Look into new todo apps",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [289, 314],
+      "subtree_span": [289, 314],
+      "line": 22,
+      "column": 1
+    },
+    {
+      "id": "11",
+      "type": "list",
+      "raw_line": "- Random idea from shower",
+      "title_text": "Random idea from shower",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [315, 340],
+      "subtree_span": [315, 340],
+      "line": 23,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "3", "6", "9"]
+}

@@ -1,0 +1,109 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 194],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Task with all metadata (due 2026-01-15 p1 2h)",
+      "title_text": "Task with all metadata",
+      "metadata": {
+        "due": "2026-01-15",
+        "priority": 1,
+        "estimate_minutes": 120
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 54],
+      "subtree_span": [8, 54],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Task with estimate only (30m)",
+      "title_text": "Task with estimate only",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": 30
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [55, 86],
+      "subtree_span": [55, 86],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Task with priority only (p2)",
+      "title_text": "Task with priority only",
+      "metadata": {
+        "due": null,
+        "priority": 2,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [87, 117],
+      "subtree_span": [87, 117],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Task with multiple groups (p1) for Monday (due 2026-01-20, 4h)",
+      "title_text": "Task with multiple groups for Monday",
+      "metadata": {
+        "due": "2026-01-20",
+        "priority": 1,
+        "estimate_minutes": 240
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [118, 182],
+      "subtree_span": [118, 182],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [184, 190],
+      "subtree_span": [184, 190],
+      "line": 8,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "5"]
+}

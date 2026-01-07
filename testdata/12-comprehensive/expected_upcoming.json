@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-01-07",
+      "priority": 0,
+      "priority_label": "Urgent",
+      "path": "Work > Deploy hotfix",
+      "item_span": [38, 104]
+    },
+    {
+      "id": "7",
+      "due": "2026-01-08",
+      "priority": null,
+      "path": "Personal > Gym",
+      "item_span": [242, 262]
+    }
+  ]
+}

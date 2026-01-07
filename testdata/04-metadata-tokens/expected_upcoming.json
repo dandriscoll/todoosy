@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-01-15",
+      "priority": 1,
+      "path": "Work > Task with all metadata",
+      "item_span": [8, 54]
+    },
+    {
+      "id": "4",
+      "due": "2026-01-20",
+      "priority": 1,
+      "path": "Work > Task with multiple groups for Monday",
+      "item_span": [118, 182]
+    }
+  ]
+}

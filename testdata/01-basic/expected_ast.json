@@ -1,0 +1,57 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work Tasks",
+      "title_text": "Work Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2"],
+      "item_span": [0, 12],
+      "subtree_span": [0, 52],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Review PR #123",
+      "title_text": "Review PR #123",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [14, 30],
+      "subtree_span": [14, 30],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Update documentation",
+      "title_text": "Update documentation",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [31, 52],
+      "subtree_span": [31, 52],
+      "line": 4,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0"]
+}

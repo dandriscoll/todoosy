@@ -1,0 +1,163 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4", "5"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 188],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Bad date format (due 2026/01/15)",
+      "title_text": "Bad date format (due 2026/01/15)",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 42],
+      "subtree_span": [8, 42],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Invalid priority (pX)",
+      "title_text": "Invalid priority (pX)",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [43, 66],
+      "subtree_span": [43, 66],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Invalid estimate (5q)",
+      "title_text": "Invalid estimate (5q)",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [67, 90],
+      "subtree_span": [67, 90],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Multiple due dates (due 2026-01-10) (due 2026-01-20)",
+      "title_text": "Multiple due dates",
+      "metadata": {
+        "due": "2026-01-20",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [91, 145],
+      "subtree_span": [91, 145],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Task with bad comment",
+      "title_text": "Task with bad comment",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [
+        "Bad indentation here"
+      ],
+      "children": [],
+      "item_span": [146, 188],
+      "subtree_span": [146, 188],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Another Section",
+      "title_text": "Another Section",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["7"],
+      "item_span": [190, 207],
+      "subtree_span": [190, 227],
+      "line": 10,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "list",
+      "raw_line": "- Task after misc",
+      "title_text": "Task after misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [209, 226],
+      "subtree_span": [209, 226],
+      "line": 12,
+      "column": 1
+    },
+    {
+      "id": "8",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [228, 234],
+      "subtree_span": [228, 234],
+      "line": 14,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "6", "8"]
+}

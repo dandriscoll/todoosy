@@ -1,0 +1,9 @@
+{
+  "timezone": "America/Denver",
+  "priorities": {
+    "0": "Urgent",
+    "1": "High",
+    "2": "Normal",
+    "3": "Backlog"
+  }
+}

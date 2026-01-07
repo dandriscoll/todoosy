@@ -1,0 +1,92 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3"],
+      "item_span": [0, 6],
+      "subtree_span": [0, 127],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Call John (CEO) about the project",
+      "title_text": "Call John (CEO) about the project",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [8, 43],
+      "subtree_span": [8, 43],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Fix bug in parser (see issue #45)",
+      "title_text": "Fix bug in parser (see issue #45)",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [44, 79],
+      "subtree_span": [44, 79],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Review the Smith (and Jones) proposal (p1)",
+      "title_text": "Review the Smith (and Jones) proposal",
+      "metadata": {
+        "due": null,
+        "priority": 1,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [80, 124],
+      "subtree_span": [80, 124],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [126, 132],
+      "subtree_span": [126, 132],
+      "line": 7,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "4"]
+}
