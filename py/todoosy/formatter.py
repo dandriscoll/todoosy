@@ -13,6 +13,9 @@ def format_metadata(metadata: ItemMetadata) -> str:
     if metadata.due:
         parts.append(f"due {metadata.due}")
 
+    if metadata.progress:
+        parts.append(metadata.progress)
+
     if metadata.priority is not None:
         parts.append(f"p{metadata.priority}")
 

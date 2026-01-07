@@ -1,0 +1,151 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4", "5", "6"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 245],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Task marked done (done)",
+      "title_text": "Task marked done",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": "done"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 34],
+      "subtree_span": [9, 34],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Task marked deleted (deleted)",
+      "title_text": "Task marked deleted",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": "deleted"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [35, 66],
+      "subtree_span": [35, 66],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Task in progress (in progress)",
+      "title_text": "Task in progress",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": "in progress"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [67, 100],
+      "subtree_span": [67, 100],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Task blocked (blocked)",
+      "title_text": "Task blocked",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": "blocked"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [101, 126],
+      "subtree_span": [101, 126],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Task with progress and other tokens (due 2026-01-15, in progress, p1, 2h)",
+      "title_text": "Task with progress and other tokens",
+      "metadata": {
+        "due": "2026-01-15",
+        "priority": 1,
+        "estimate_minutes": 120,
+        "progress": "in progress"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [127, 203],
+      "subtree_span": [127, 203],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "raw_line": "- Task with done and priority (done, p2)",
+      "title_text": "Task with done and priority",
+      "metadata": {
+        "due": null,
+        "priority": 2,
+        "estimate_minutes": null,
+        "progress": "done"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [204, 245],
+      "subtree_span": [204, 245],
+      "line": 8,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [247, 253],
+      "subtree_span": [247, 253],
+      "line": 10,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "7"]
+}

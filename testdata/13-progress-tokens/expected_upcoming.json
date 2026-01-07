@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": "5",
+      "due": "2026-01-15",
+      "priority": 1,
+      "path": "Tasks > Task with progress and other tokens",
+      "item_span": [127, 203]
+    }
+  ]
+}

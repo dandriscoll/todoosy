@@ -27,6 +27,9 @@ const MONTH_NAMES: Record<string, number> = {
   december: 12, dec: 12,
 };
 
+// Built-in progress states (normalized to lowercase)
+const PROGRESS_STATES = new Set(['done', 'deleted', 'in progress', 'blocked']);
+
 export interface ParseResult {
   ast: AST;
   warnings: Warning[];
@@ -216,6 +219,39 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
       });
       continue;
     }
+
+    // Check for progress states
+    const partLower = part.toLowerCase();
+
+    // Check for single-word progress states: done, deleted, blocked
+    if (PROGRESS_STATES.has(partLower)) {
+      tokens.push({
+        type: 'progress',
+        value: partLower,
+        raw: part,
+        start: absoluteStart,
+        end: absoluteEnd,
+      });
+      continue;
+    }
+
+    // Check for multi-word progress state: "in progress"
+    if (partLower === 'in') {
+      const remainingParts = parts.slice(i + 1);
+      if (remainingParts.length > 0 && remainingParts[0].toLowerCase() === 'progress') {
+        const nextPartStart = content.indexOf(remainingParts[0], currentPos);
+        const nextAbsoluteEnd = groupStart + 1 + nextPartStart + remainingParts[0].length;
+        tokens.push({
+          type: 'progress',
+          value: 'in progress',
+          raw: `${part} ${remainingParts[0]}`,
+          start: absoluteStart,
+          end: nextAbsoluteEnd,
+        });
+        skipIndices.add(i + 1);
+        continue;
+      }
+    }
   }
 
   return {
@@ -280,6 +316,7 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
     due: null,
     priority: null,
     estimate_minutes: null,
+    progress: null,
   };
 
   // Collect all tokens from all groups
@@ -296,6 +333,9 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
         break;
       case 'estimate':
         metadata.estimate_minutes = token.value as number;
+        break;
+      case 'progress':
+        metadata.progress = token.value as string;
         break;
     }
   }

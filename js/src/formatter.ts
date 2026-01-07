@@ -12,6 +12,10 @@ function formatMetadata(metadata: ItemMetadata): string {
     parts.push(`due ${metadata.due}`);
   }
 
+  if (metadata.progress) {
+    parts.push(metadata.progress);
+  }
+
   if (metadata.priority !== null) {
     parts.push(`p${metadata.priority}`);
   }

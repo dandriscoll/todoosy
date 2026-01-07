@@ -11,6 +11,7 @@ class ItemMetadata:
     due: Optional[str] = None
     priority: Optional[int] = None
     estimate_minutes: Optional[int] = None
+    progress: Optional[str] = None
 
 
 @dataclass

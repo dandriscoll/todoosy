@@ -6,6 +6,7 @@ export interface ItemMetadata {
   due: string | null;
   priority: number | null;
   estimate_minutes: number | null;
+  progress: string | null;
 }
 
 export interface ItemNode {
@@ -69,7 +70,7 @@ export interface Scheme {
 }
 
 export interface ParsedToken {
-  type: 'due' | 'priority' | 'estimate';
+  type: 'due' | 'priority' | 'estimate' | 'progress';
   value: string | number;
   raw: string;
   start: number;

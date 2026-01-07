@@ -34,6 +34,9 @@ const ESTIMATE_REGEX = /\b(\d+)([mhd])\b/gi;
 const INVALID_PRIORITY_REGEX = /\bp([^0-9\s)][^\s)]*)\b/gi;
 const INVALID_ESTIMATE_REGEX = /\b(\d+)([^mhd\s)0-9][^\s)]*)\b/gi;
 
+// Built-in progress states (normalized to lowercase)
+const PROGRESS_STATES = new Set(['done', 'deleted', 'in progress', 'blocked', 'progress']);
+
 function isValidDate(dateStr: string): boolean {
   // Check standard formats
   if (VALID_DATE_FORMATS.some(regex => regex.test(dateStr))) {
@@ -178,6 +181,8 @@ export function lint(text: string, scheme?: Scheme): LintResult {
       // Check for invalid priority tokens (e.g., pX)
       const invalidPriorities = content.matchAll(/\bp([a-zA-Z][^\s,)]*)/gi);
       for (const ipMatch of invalidPriorities) {
+        // Skip if this is "progress" (part of "in progress" progress state)
+        if (ipMatch[0].toLowerCase() === 'progress') continue;
         const tokenStart = parenStart + 1 + (ipMatch.index || 0);
         warnings.push({
           code: 'INVALID_TOKEN',

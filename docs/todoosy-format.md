@@ -144,19 +144,26 @@ Normalization:
 - Parsers MUST normalize to minutes internally
 - Conversion: 1h = 60m, 1d = 480m (8 working hours)
 
-##### State
+##### Progress
 
-Format: State name (case-insensitive)
+Format: Progress state name (case-insensitive)
 
-Built-in states:
-- `not started` - Task has not been started (default)
-- `in progress` - Task is currently being worked on
+Built-in progress states:
 - `done` - Task is complete
+- `deleted` - Task has been deleted/cancelled
+- `in progress` - Task is currently being worked on
 - `blocked` - Task is blocked by something
 
-Examples: `not started`, `in progress`, `done`, `blocked`
+Examples: `done`, `deleted`, `in progress`, `blocked`
 
-Additional states MAY be defined in the scheme file (Section 7.4).
+Progress tokens can appear anywhere within a parentheses group alongside other tokens:
+- `(due Jan 6, in progress, 3h)` - Task due Jan 6, in progress, estimate 3 hours
+- `(done, p1)` - Completed task with priority 1
+- `(blocked)` - Blocked task
+
+Parsers MUST normalize progress state names to lowercase internally.
+
+Additional progress states MAY be defined in the scheme file (Section 7.4).
 
 #### 4.3 Token Bag Combination
 
@@ -166,7 +173,7 @@ When multiple parentheses groups exist, all recognized tokens are merged:
 - Task (p1, in progress) with details (due 2026-01-15, 2h)
 ```
 
-Results in token bag: `{priority: 1, state: "in progress", due: "2026-01-15", estimate: 120}`
+Results in token bag: `{priority: 1, progress: "in progress", due: "2026-01-15", estimate: 120}`
 
 If duplicate token types appear, the **last occurrence wins**.
 
@@ -256,12 +263,12 @@ Rules:
 - Label is freeform text after the ` - ` separator
 - Priority numbers used in documents (`p0`, `p1`, etc.) map to these labels
 
-#### 7.4 States Section
+#### 7.4 Progress Section
 
-A heading `# States` followed by additional state definitions, one per line.
+A heading `# Progress` followed by additional progress state definitions, one per line.
 
 ```markdown
-# States
+# Progress
 
 waiting
 deferred
@@ -269,10 +276,10 @@ cancelled
 ```
 
 Rules:
-- Each line defines an additional state name
-- States are case-insensitive when matching tokens
-- Custom states extend (do not replace) the built-in states: `not started`, `in progress`, `done`, `blocked`
-- If omitted, only the built-in states are recognized
+- Each line defines an additional progress state name
+- Progress states are case-insensitive when matching tokens
+- Custom progress states extend (do not replace) the built-in states: `done`, `deleted`, `in progress`, `blocked`
+- If omitted, only the built-in progress states are recognized
 
 ---
 
@@ -468,11 +475,11 @@ Recurring tasks (e.g., "every Monday", "daily") are not supported. Each task ins
 
 **Rationale:** Recurrence rules add significant complexity to parsing and require decisions about instance generation timing.
 
-### Completion States
+### Workflow States Beyond Progress
 
-There is no defined syntax for marking items as complete, in-progress, or cancelled. The format tracks what needs to be done, not workflow states.
+The built-in progress states (`done`, `deleted`, `in progress`, `blocked`) cover basic task tracking. Advanced workflow states (e.g., "waiting for review", "in QA") are not specified beyond the extensibility provided by the scheme file's Progress section.
 
-**Rationale:** Completion semantics vary widely between users. This may be addressed in a future version.
+**Rationale:** Workflow semantics vary widely between users. Basic progress tracking is supported via progress tokens.
 
 ### Multi-File Vaults
 

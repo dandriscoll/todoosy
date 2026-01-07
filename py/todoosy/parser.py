@@ -31,6 +31,9 @@ MONTH_NAMES: dict[str, int] = {
     'december': 12, 'dec': 12,
 }
 
+# Built-in progress states (normalized to lowercase)
+PROGRESS_STATES = {'done', 'deleted', 'in progress', 'blocked'}
+
 
 @dataclass
 class ParseResult:
@@ -212,6 +215,36 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
             ))
             continue
 
+        # Check for progress states
+        part_lower = part.lower()
+
+        # Check for single-word progress states: done, deleted, blocked
+        if part_lower in PROGRESS_STATES:
+            tokens.append(ParsedToken(
+                type='progress',
+                value=part_lower,
+                raw=part,
+                start=absolute_start,
+                end=absolute_end,
+            ))
+            continue
+
+        # Check for multi-word progress state: "in progress"
+        if part_lower == 'in':
+            remaining_parts = parts[i + 1:]
+            if remaining_parts and remaining_parts[0].lower() == 'progress':
+                next_part_start = content.find(remaining_parts[0], current_pos)
+                next_absolute_end = group_start + 1 + next_part_start + len(remaining_parts[0])
+                tokens.append(ParsedToken(
+                    type='progress',
+                    value='in progress',
+                    raw=f'{part} {remaining_parts[0]}',
+                    start=absolute_start,
+                    end=next_absolute_end,
+                ))
+                skip_indices.add(i + 1)
+                continue
+
     return ParenGroup(
         start=group_start,
         end=group_start + len(content) + 2,  # +2 for parens
@@ -280,6 +313,8 @@ def build_metadata(groups: list[ParenGroup]) -> ItemMetadata:
             metadata.priority = int(token.value)
         elif token.type == 'estimate':
             metadata.estimate_minutes = int(token.value)
+        elif token.type == 'progress':
+            metadata.progress = str(token.value)
 
     return metadata
 

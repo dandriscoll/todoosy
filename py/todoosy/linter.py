@@ -169,6 +169,9 @@ def lint(text: str, scheme: Optional[Scheme] = None) -> LintResult:
             # Check for invalid priority tokens (e.g., pX)
             invalid_priority_pattern = re.compile(r'\bp([a-zA-Z][^\s,)]*)', re.IGNORECASE)
             for ip_match in invalid_priority_pattern.finditer(content):
+                # Skip if this is "progress" (part of "in progress" progress state)
+                if ip_match.group(0).lower() == 'progress':
+                    continue
                 token_start = paren_start + 1 + ip_match.start()
                 warnings.append(Warning(
                     code='INVALID_TOKEN',
