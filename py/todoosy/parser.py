@@ -65,62 +65,154 @@ def infer_year(month: int, day: int) -> int:
 
 def parse_date(date_str: str) -> tuple[Optional[str], bool]:
     """Parse a date string and return (normalized_date, is_valid)."""
-    # ISO format: YYYY-MM-DD
-    iso_match = re.match(r'^(\d{4})-(\d{2})-(\d{2})$', date_str)
+    # ISO format with dashes: YYYY-MM-DD or YYYY-M-D
+    iso_match = re.match(r'^(\d{4})-(\d{1,2})-(\d{1,2})$', date_str)
     if iso_match:
-        return date_str, True
-
-    # US format: MM/DD/YYYY
-    us_match = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{4})$', date_str)
-    if us_match:
-        month = us_match.group(1).zfill(2)
-        day = us_match.group(2).zfill(2)
-        year = us_match.group(3)
+        year = iso_match.group(1)
+        month = iso_match.group(2).zfill(2)
+        day = iso_match.group(3).zfill(2)
         return f"{year}-{month}-{day}", True
 
-    # US short format: MM/DD/YY
-    us_short_match = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{2})$', date_str)
-    if us_short_match:
-        month = us_short_match.group(1).zfill(2)
-        day = us_short_match.group(2).zfill(2)
-        year = f"20{us_short_match.group(3)}"
+    # Short ISO format with dashes: YY-M-D or YY-MM-DD
+    iso_short_match = re.match(r'^(\d{2})-(\d{1,2})-(\d{1,2})$', date_str)
+    if iso_short_match:
+        year = f"20{iso_short_match.group(1)}"
+        month = iso_short_match.group(2).zfill(2)
+        day = iso_short_match.group(3).zfill(2)
+        return f"{year}-{month}-{day}", True
+
+    # Year-first with slashes: YYYY/MM/DD
+    ymd_slash_match = re.match(r'^(\d{4})/(\d{1,2})/(\d{1,2})$', date_str)
+    if ymd_slash_match:
+        year = ymd_slash_match.group(1)
+        month = ymd_slash_match.group(2).zfill(2)
+        day = ymd_slash_match.group(3).zfill(2)
+        return f"{year}-{month}-{day}", True
+
+    # Slash format: X/X/X where components are 1-2 digits each
+    # Use heuristics to determine format
+    slash_match = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{1,2})$', date_str)
+    if slash_match:
+        first = int(slash_match.group(1))
+        second = int(slash_match.group(2))
+        third = int(slash_match.group(3))
+
+        # Heuristics to determine format:
+        # - If third > 31, it's a year -> XX/XX/YY
+        # - If first > 31, it's a year -> YY/XX/XX (unusual but accept it)
+        # - If first > 12 and third <= 31, first is day -> DD/MM/YY
+        # - Otherwise, assume MM/DD/YY (US convention)
+
+        if third > 31:
+            # Third is year (e.g., 26/01/15 where 15 > 31? No, but 01/15/50)
+            # Actually third > 31 means it can't be a day, so it must be year
+            year = f"20{slash_match.group(3).zfill(2)}"
+            if first > 12:  # DD/MM/YY
+                day = str(first).zfill(2)
+                month = str(second).zfill(2)
+            else:  # MM/DD/YY
+                month = str(first).zfill(2)
+                day = str(second).zfill(2)
+        elif first > 31:
+            # First must be year (unusual format YY/MM/DD)
+            year = f"20{slash_match.group(1).zfill(2)}"
+            month = str(second).zfill(2)
+            day = str(third).zfill(2)
+        elif first > 12:
+            # First > 12 but <= 31, so it's a day -> DD/MM/YY
+            day = str(first).zfill(2)
+            month = str(second).zfill(2)
+            year = f"20{slash_match.group(3).zfill(2)}"
+        else:
+            # Default: MM/DD/YY (US convention)
+            month = str(first).zfill(2)
+            day = str(second).zfill(2)
+            year = f"20{slash_match.group(3).zfill(2)}"
+        return f"{year}-{month}-{day}", True
+
+    # Slash format with 4-digit year at end: XX/XX/YYYY
+    slash_4yr_match = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{4})$', date_str)
+    if slash_4yr_match:
+        first = int(slash_4yr_match.group(1))
+        second = int(slash_4yr_match.group(2))
+        year = slash_4yr_match.group(3)
+        if first > 12:  # Must be DD/MM/YYYY
+            day = str(first).zfill(2)
+            month = str(second).zfill(2)
+        else:  # Treat as MM/DD/YYYY (US convention)
+            month = str(first).zfill(2)
+            day = str(second).zfill(2)
         return f"{year}-{month}-{day}", True
 
     return None, False
 
 
 def parse_text_date(parts: list[str]) -> tuple[Optional[str], bool, int]:
-    """Parse text date format (Month Day [Year]). Returns (normalized_date, is_valid, parts_consumed)."""
+    """Parse text date format (Month Day [Year] or Day Month [Year]). Returns (normalized_date, is_valid, parts_consumed)."""
     if len(parts) < 2:
         return None, False, 0
 
+    # Try "Month Day [Year]" format first
     month_str = parts[0].lower()
     month = MONTH_NAMES.get(month_str)
-    if month is None:
-        return None, False, 0
+    if month is not None:
+        day_match = re.match(r'^(\d{1,2})$', parts[1])
+        if day_match:
+            day = int(day_match.group(1))
+            if 1 <= day <= 31:
+                # Check for year (4-digit or 2-digit)
+                if len(parts) >= 3:
+                    year_match = re.match(r'^(\d{4})$', parts[2])
+                    if year_match:
+                        year = int(year_match.group(1))
+                        month_padded = str(month).zfill(2)
+                        day_padded = str(day).zfill(2)
+                        return f"{year}-{month_padded}-{day_padded}", True, 3
+                    # Try 2-digit year
+                    year_short_match = re.match(r'^(\d{2})$', parts[2])
+                    if year_short_match:
+                        year = 2000 + int(year_short_match.group(1))
+                        month_padded = str(month).zfill(2)
+                        day_padded = str(day).zfill(2)
+                        return f"{year}-{month_padded}-{day_padded}", True, 3
 
-    day_match = re.match(r'^(\d{1,2})$', parts[1])
-    if not day_match:
-        return None, False, 0
+                # No year provided, infer it
+                year = infer_year(month, day)
+                month_padded = str(month).zfill(2)
+                day_padded = str(day).zfill(2)
+                return f"{year}-{month_padded}-{day_padded}", True, 2
 
-    day = int(day_match.group(1))
-    if day < 1 or day > 31:
-        return None, False, 0
+    # Try "Day Month [Year]" format
+    day_match = re.match(r'^(\d{1,2})$', parts[0])
+    if day_match:
+        day = int(day_match.group(1))
+        if 1 <= day <= 31:
+            month_str = parts[1].lower()
+            month = MONTH_NAMES.get(month_str)
+            if month is not None:
+                # Check for year (4-digit or 2-digit)
+                if len(parts) >= 3:
+                    year_match = re.match(r'^(\d{4})$', parts[2])
+                    if year_match:
+                        year = int(year_match.group(1))
+                        month_padded = str(month).zfill(2)
+                        day_padded = str(day).zfill(2)
+                        return f"{year}-{month_padded}-{day_padded}", True, 3
+                    # Try 2-digit year
+                    year_short_match = re.match(r'^(\d{2})$', parts[2])
+                    if year_short_match:
+                        year = 2000 + int(year_short_match.group(1))
+                        month_padded = str(month).zfill(2)
+                        day_padded = str(day).zfill(2)
+                        return f"{year}-{month_padded}-{day_padded}", True, 3
 
-    # Check for year
-    if len(parts) >= 3:
-        year_match = re.match(r'^(\d{4})$', parts[2])
-        if year_match:
-            year = int(year_match.group(1))
-            month_padded = str(month).zfill(2)
-            day_padded = str(day).zfill(2)
-            return f"{year}-{month_padded}-{day_padded}", True, 3
+                # No year provided, infer it
+                year = infer_year(month, day)
+                month_padded = str(month).zfill(2)
+                day_padded = str(day).zfill(2)
+                return f"{year}-{month_padded}-{day_padded}", True, 2
 
-    # No year provided, infer it
-    year = infer_year(month, day)
-    month_padded = str(month).zfill(2)
-    day_padded = str(day).zfill(2)
-    return f"{year}-{month_padded}-{day_padded}", True, 2
+    return None, False, 0
 
 
 def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:

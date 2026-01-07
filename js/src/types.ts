@@ -68,6 +68,7 @@ export interface Scheme {
   timezone: string | null;
   priorities: Record<string, string>;
   misc: string; // format: "filename/headingname", default: "todoosy.md/Misc"
+  calendar_format: string; // Valid: yyyy-mm-dd, yyyy/mm/dd, mm/dd/yyyy, dd/mm/yyyy
 }
 
 export interface ParsedToken {

@@ -1,0 +1,32 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-01-15",
+      "priority": null,
+      "path": "Tasks > Month-first text date",
+      "item_span": [9, 45]
+    },
+    {
+      "id": "2",
+      "due": "2026-02-20",
+      "priority": null,
+      "path": "Tasks > Day-first text date",
+      "item_span": [46, 85]
+    },
+    {
+      "id": "4",
+      "due": "2026-05-01",
+      "priority": null,
+      "path": "Tasks > ISO date",
+      "item_span": [128, 155]
+    },
+    {
+      "id": "3",
+      "due": "2027-03-10",
+      "priority": null,
+      "path": "Tasks > Day-first with year",
+      "item_span": [86, 127]
+    }
+  ]
+}

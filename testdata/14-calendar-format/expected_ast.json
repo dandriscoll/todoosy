@@ -1,0 +1,109 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 152],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Month-first text date (due Jan 15)",
+      "title_text": "Month-first text date",
+      "metadata": {
+        "due": "2026-01-15",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 45],
+      "subtree_span": [9, 45],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Day-first text date (due 20 February)",
+      "title_text": "Day-first text date",
+      "metadata": {
+        "due": "2026-02-20",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [46, 85],
+      "subtree_span": [46, 85],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Day-first with year (due 10 March 2027)",
+      "title_text": "Day-first with year",
+      "metadata": {
+        "due": "2027-03-10",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [86, 127],
+      "subtree_span": [86, 127],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- ISO date (due 2026-05-01)",
+      "title_text": "ISO date",
+      "metadata": {
+        "due": "2026-05-01",
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [128, 155],
+      "subtree_span": [128, 155],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [157, 163],
+      "subtree_span": [157, 163],
+      "line": 8,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "5"]
+}

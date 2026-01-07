@@ -8,15 +8,19 @@ from .types import Scheme
 TIMEZONE_HEADING_REGEX = re.compile(r'^#\s+Timezone\s*$', re.IGNORECASE)
 PRIORITIES_HEADING_REGEX = re.compile(r'^#\s+Priorities\s*$', re.IGNORECASE)
 MISC_HEADING_REGEX = re.compile(r'^#\s+Misc\s*$', re.IGNORECASE)
+CALENDAR_FORMAT_HEADING_REGEX = re.compile(r'^#\s+Calendar\s+Format\s*$', re.IGNORECASE)
 PRIORITY_LINE_REGEX = re.compile(r'^[*\-]?\s*P(\d+)\s*[-–—]\s*(.+)$', re.IGNORECASE)
+
+VALID_CALENDAR_FORMATS = {'yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy'}
 
 
 def parse_scheme(text: str) -> Scheme:
     """Parse a todoosy scheme file."""
     lines = text.split('\n')
-    scheme = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc')
+    scheme = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc', calendar_format='yyyy-mm-dd')
 
     current_section = 'none'
+    calendar_format_set = False
 
     for line in lines:
         trimmed = line.strip()
@@ -32,6 +36,10 @@ def parse_scheme(text: str) -> Scheme:
 
         if MISC_HEADING_REGEX.match(trimmed):
             current_section = 'misc'
+            continue
+
+        if CALENDAR_FORMAT_HEADING_REGEX.match(trimmed):
+            current_section = 'calendar_format'
             continue
 
         # Check if we hit another heading (any level)
@@ -66,5 +74,11 @@ def parse_scheme(text: str) -> Scheme:
             # First non-empty line after Misc heading is the misc location (filename/headingname)
             if trimmed and not trimmed.startswith('#'):
                 scheme.misc = trimmed
+
+        elif current_section == 'calendar_format':
+            # First non-empty line after Calendar Format heading is the format
+            if not calendar_format_set and trimmed and not trimmed.startswith('#'):
+                scheme.calendar_format = trimmed.lower()
+                calendar_format_set = True
 
     return scheme

@@ -1,6 +1,6 @@
 # Work
 
-- Bad date format (due 2026/01/15)
+- Bad date format (due 2026/jan/15)
 - Invalid priority (pX)
 - Invalid estimate (5q)
 - Multiple due dates (due 2026-01-20)

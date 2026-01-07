@@ -7,7 +7,10 @@ import type { Scheme } from './types.js';
 const TIMEZONE_HEADING_REGEX = /^#\s+Timezone\s*$/i;
 const PRIORITIES_HEADING_REGEX = /^#\s+Priorities\s*$/i;
 const MISC_HEADING_REGEX = /^#\s+Misc\s*$/i;
+const CALENDAR_FORMAT_HEADING_REGEX = /^#\s+Calendar\s+Format\s*$/i;
 const PRIORITY_LINE_REGEX = /^[*\-]?\s*P(\d+)\s*[-–—]\s*(.+)$/i;
+
+export const VALID_CALENDAR_FORMATS = new Set(['yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy']);
 
 export function parseScheme(text: string): Scheme {
   const lines = text.split('\n');
@@ -15,9 +18,11 @@ export function parseScheme(text: string): Scheme {
     timezone: null,
     priorities: {},
     misc: 'todoosy.md/Misc',
+    calendar_format: 'yyyy-mm-dd',
   };
 
-  let currentSection: 'none' | 'timezone' | 'priorities' | 'misc' = 'none';
+  let currentSection: 'none' | 'timezone' | 'priorities' | 'misc' | 'calendar_format' = 'none';
+  let calendarFormatSet = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -35,6 +40,11 @@ export function parseScheme(text: string): Scheme {
 
     if (MISC_HEADING_REGEX.test(trimmed)) {
       currentSection = 'misc';
+      continue;
+    }
+
+    if (CALENDAR_FORMAT_HEADING_REGEX.test(trimmed)) {
+      currentSection = 'calendar_format';
       continue;
     }
 
@@ -75,6 +85,12 @@ export function parseScheme(text: string): Scheme {
       // First non-empty line after Misc heading is the misc location (filename/headingname)
       if (trimmed && !trimmed.startsWith('#')) {
         scheme.misc = trimmed;
+      }
+    } else if (currentSection === 'calendar_format') {
+      // First non-empty line after Calendar Format heading is the format
+      if (!calendarFormatSet && trimmed && !trimmed.startsWith('#')) {
+        scheme.calendar_format = trimmed.toLowerCase();
+        calendarFormatSet = true;
       }
     }
   }

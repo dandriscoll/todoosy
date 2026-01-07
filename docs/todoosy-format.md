@@ -286,7 +286,33 @@ Rules:
 - Custom progress states extend (do not replace) the built-in states: `done`, `deleted`, `in progress`, `blocked`
 - If omitted, only the built-in progress states are recognized
 
-#### 7.5 Misc Section
+#### 7.5 Calendar Format Section
+
+A heading `# Calendar Format` followed by a single line specifying the preferred date output format for numerical dates.
+
+```markdown
+# Calendar Format
+
+yyyy-mm-dd
+```
+
+Valid format values:
+| Value | Output Example | Description |
+|-------|----------------|-------------|
+| `yyyy-mm-dd` | `2026-01-10` | ISO 8601 format (default) |
+| `yyyy/mm/dd` | `2026/01/10` | Year-first with slashes |
+| `mm/dd/yyyy` | `01/10/2026` | US format |
+| `dd/mm/yyyy` | `10/01/2026` | European format |
+
+Rules:
+- Format values are case-insensitive
+- If omitted, defaults to `yyyy-mm-dd`
+- The linter MUST warn if an invalid format value is specified
+- This setting affects how formatters output numerical dates
+- Text date formats (e.g., `Jan 10`, `January 10`, `10 Jan`, `10 January`) are always accepted as input regardless of this setting
+- Parsers MUST accept all input formats; this setting only affects output
+
+#### 7.6 Misc Section
 
 A heading `# Misc` followed by a single line specifying the location of the misc section.
 

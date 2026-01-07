@@ -2,7 +2,7 @@
   "warnings": [
     {
       "code": "INVALID_DATE_FORMAT",
-      "message": "Invalid due date format: 2026/01/15",
+      "message": "Invalid due date format: 2026/jan/15",
       "line": 3,
       "column": 24,
       "span": [31, 41]

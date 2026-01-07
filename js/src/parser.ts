@@ -58,25 +58,112 @@ function inferYear(month: number, day: number): number {
 }
 
 function parseDate(dateStr: string): { date: string | null; valid: boolean; raw: string } {
-  const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // ISO format: YYYY-MM-DD or YYYY-M-D
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
-    return { date: dateStr, valid: true, raw: dateStr };
-  }
-
-  const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (usMatch) {
-    const month = usMatch[1].padStart(2, '0');
-    const day = usMatch[2].padStart(2, '0');
-    const year = usMatch[3];
+    const year = isoMatch[1];
+    const month = isoMatch[2].padStart(2, '0');
+    const day = isoMatch[3].padStart(2, '0');
     return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
   }
 
-  const usShortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-  if (usShortMatch) {
-    const month = usShortMatch[1].padStart(2, '0');
-    const day = usShortMatch[2].padStart(2, '0');
-    const year = `20${usShortMatch[3]}`;
+  // Short ISO format: YY-MM-DD or YY-M-D
+  const isoShortMatch = dateStr.match(/^(\d{2})-(\d{1,2})-(\d{1,2})$/);
+  if (isoShortMatch) {
+    const year = `20${isoShortMatch[1]}`;
+    const month = isoShortMatch[2].padStart(2, '0');
+    const day = isoShortMatch[3].padStart(2, '0');
     return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
+  }
+
+  // Year-first with slashes: YYYY/MM/DD
+  const ymdSlashMatch = dateStr.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (ymdSlashMatch) {
+    const year = ymdSlashMatch[1];
+    const month = ymdSlashMatch[2].padStart(2, '0');
+    const day = ymdSlashMatch[3].padStart(2, '0');
+    return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
+  }
+
+  // Slash format: X/X/X - need smart heuristics to determine format
+  // Could be YY/MM/DD, MM/DD/YY, DD/MM/YY, MM/DD/YYYY, DD/MM/YYYY
+  const slashMatch = dateStr.match(/^(\d{1,4})\/(\d{1,2})\/(\d{1,4})$/);
+  if (slashMatch) {
+    const first = parseInt(slashMatch[1], 10);
+    const second = parseInt(slashMatch[2], 10);
+    const third = parseInt(slashMatch[3], 10);
+    const firstLen = slashMatch[1].length;
+    const thirdLen = slashMatch[3].length;
+
+    let year: number, month: number, day: number;
+
+    // 4-digit year at start: YYYY/MM/DD
+    if (firstLen === 4) {
+      year = first;
+      month = second;
+      day = third;
+    }
+    // 4-digit year at end: XX/XX/YYYY
+    else if (thirdLen === 4) {
+      year = third;
+      // Heuristic: if first > 12, must be DD/MM/YYYY, otherwise MM/DD/YYYY
+      if (first > 12) {
+        day = first;
+        month = second;
+      } else {
+        month = first;
+        day = second;
+      }
+    }
+    // 2-digit year - need to determine position
+    else if (firstLen === 2 && thirdLen === 2) {
+      // Smart heuristics:
+      // - If first > 31, must be YY/MM/DD (year at start)
+      // - If first > 12, must be DD/MM/YY (day at start)
+      // - Otherwise treat as MM/DD/YY (US convention)
+      if (first > 31) {
+        // YY/MM/DD
+        year = 2000 + first;
+        month = second;
+        day = third;
+      } else if (first > 12) {
+        // DD/MM/YY
+        day = first;
+        month = second;
+        year = 2000 + third;
+      } else {
+        // MM/DD/YY (US convention)
+        month = first;
+        day = second;
+        year = 2000 + third;
+      }
+    }
+    // Single digit somewhere
+    else {
+      // Default to MM/DD/YY if year at end seems 2-digit, else YYYY/MM/DD
+      if (thirdLen <= 2) {
+        // XX/XX/YY
+        if (first > 12) {
+          day = first;
+          month = second;
+        } else {
+          month = first;
+          day = second;
+        }
+        year = 2000 + third;
+      } else {
+        // Shouldn't happen, but handle it
+        year = first;
+        month = second;
+        day = third;
+      }
+    }
+
+    return {
+      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      valid: true,
+      raw: dateStr
+    };
   }
 
   return { date: null, valid: false, raw: dateStr };
@@ -87,39 +174,82 @@ function parseTextDate(parts: string[]): { date: string | null; valid: boolean; 
     return { date: null, valid: false, partsConsumed: 0 };
   }
 
+  // Try "Month Day [Year]" format first
   const monthStr = parts[0].toLowerCase();
-  const month = MONTH_NAMES[monthStr];
-  if (month === undefined) {
-    return { date: null, valid: false, partsConsumed: 0 };
-  }
+  let month = MONTH_NAMES[monthStr];
+  if (month !== undefined) {
+    const dayStr = parts[1];
+    const dayMatch = dayStr.match(/^(\d{1,2})$/);
+    if (dayMatch) {
+      const day = parseInt(dayMatch[1], 10);
+      if (day >= 1 && day <= 31) {
+        // Check for year (4-digit or 2-digit)
+        if (parts.length >= 3) {
+          const yearStr = parts[2];
+          const yearMatch = yearStr.match(/^(\d{4})$/);
+          if (yearMatch) {
+            const year = parseInt(yearMatch[1], 10);
+            const monthPadded = String(month).padStart(2, '0');
+            const dayPadded = String(day).padStart(2, '0');
+            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          }
+          // Try 2-digit year
+          const yearShortMatch = yearStr.match(/^(\d{2})$/);
+          if (yearShortMatch) {
+            const year = 2000 + parseInt(yearShortMatch[1], 10);
+            const monthPadded = String(month).padStart(2, '0');
+            const dayPadded = String(day).padStart(2, '0');
+            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          }
+        }
 
-  const dayStr = parts[1];
-  const dayMatch = dayStr.match(/^(\d{1,2})$/);
-  if (!dayMatch) {
-    return { date: null, valid: false, partsConsumed: 0 };
-  }
-  const day = parseInt(dayMatch[1], 10);
-  if (day < 1 || day > 31) {
-    return { date: null, valid: false, partsConsumed: 0 };
-  }
-
-  // Check for year
-  if (parts.length >= 3) {
-    const yearStr = parts[2];
-    const yearMatch = yearStr.match(/^(\d{4})$/);
-    if (yearMatch) {
-      const year = parseInt(yearMatch[1], 10);
-      const monthPadded = String(month).padStart(2, '0');
-      const dayPadded = String(day).padStart(2, '0');
-      return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+        // No year provided, infer it
+        const year = inferYear(month, day);
+        const monthPadded = String(month).padStart(2, '0');
+        const dayPadded = String(day).padStart(2, '0');
+        return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+      }
     }
   }
 
-  // No year provided, infer it
-  const year = inferYear(month, day);
-  const monthPadded = String(month).padStart(2, '0');
-  const dayPadded = String(day).padStart(2, '0');
-  return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+  // Try "Day Month [Year]" format
+  const dayFirstMatch = parts[0].match(/^(\d{1,2})$/);
+  if (dayFirstMatch) {
+    const day = parseInt(dayFirstMatch[1], 10);
+    if (day >= 1 && day <= 31) {
+      const monthStr2 = parts[1].toLowerCase();
+      month = MONTH_NAMES[monthStr2];
+      if (month !== undefined) {
+        // Check for year (4-digit or 2-digit)
+        if (parts.length >= 3) {
+          const yearStr = parts[2];
+          const yearMatch = yearStr.match(/^(\d{4})$/);
+          if (yearMatch) {
+            const year = parseInt(yearMatch[1], 10);
+            const monthPadded = String(month).padStart(2, '0');
+            const dayPadded = String(day).padStart(2, '0');
+            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          }
+          // Try 2-digit year
+          const yearShortMatch = yearStr.match(/^(\d{2})$/);
+          if (yearShortMatch) {
+            const year = 2000 + parseInt(yearShortMatch[1], 10);
+            const monthPadded = String(month).padStart(2, '0');
+            const dayPadded = String(day).padStart(2, '0');
+            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          }
+        }
+
+        // No year provided, infer it
+        const year = inferYear(month, day);
+        const monthPadded = String(month).padStart(2, '0');
+        const dayPadded = String(day).padStart(2, '0');
+        return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+      }
+    }
+  }
+
+  return { date: null, valid: false, partsConsumed: 0 };
 }
 
 function parseTokensInParenGroup(content: string, groupStart: number): ParenGroup {

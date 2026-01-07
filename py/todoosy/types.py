@@ -67,6 +67,7 @@ class Scheme:
     timezone: Optional[str] = None
     priorities: dict[str, str] = field(default_factory=dict)
     misc: str = "todoosy.md/Misc"  # format: "filename/headingname"
+    calendar_format: str = "yyyy-mm-dd"  # Valid: yyyy-mm-dd, yyyy/mm/dd, mm/dd/yyyy, dd/mm/yyyy
 
 
 @dataclass

@@ -1,0 +1,9 @@
+[
+  {
+    "code": "INVALID_CALENDAR_FORMAT",
+    "message": "Invalid calendar format: 'invalid-format'. Valid formats are: dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd, yyyy/mm/dd",
+    "line": null,
+    "column": null,
+    "span": null
+  }
+]

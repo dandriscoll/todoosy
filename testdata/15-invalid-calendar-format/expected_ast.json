@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": ["1"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 22],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Simple task",
+      "title_text": "Simple task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 22],
+      "subtree_span": [9, 22],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [24, 30],
+      "subtree_span": [24, 30],
+      "line": 5,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "2"]
+}

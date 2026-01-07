@@ -6,9 +6,12 @@ import { parse } from './parser.js';
 import type { Warning, LintResult, Scheme } from './types.js';
 
 const VALID_DATE_FORMATS = [
-  /^\d{4}-\d{2}-\d{2}$/,           // YYYY-MM-DD
-  /^\d{1,2}\/\d{1,2}\/\d{4}$/,     // MM/DD/YYYY
-  /^\d{1,2}\/\d{1,2}\/\d{2}$/,     // MM/DD/YY
+  /^\d{4}-\d{1,2}-\d{1,2}$/,       // YYYY-MM-DD or YYYY-M-D
+  /^\d{2}-\d{1,2}-\d{1,2}$/,       // YY-MM-DD or YY-M-D
+  /^\d{4}\/\d{1,2}\/\d{1,2}$/,     // YYYY/MM/DD
+  /^\d{2}\/\d{1,2}\/\d{1,2}$/,     // YY/MM/DD or MM/DD/YY (ambiguous but accepted)
+  /^\d{1,2}\/\d{1,2}\/\d{4}$/,     // MM/DD/YYYY or DD/MM/YYYY
+  /^\d{1,2}\/\d{1,2}\/\d{2}$/,     // MM/DD/YY or DD/MM/YY
 ];
 
 const MONTH_NAMES = new Set([
@@ -26,8 +29,11 @@ const MONTH_NAMES = new Set([
   'december', 'dec',
 ]);
 
-// Regex for text dates: Month Day or Month Day Year
-const TEXT_DATE_REGEX = /^(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:\s+(\d{4}))?$/i;
+// Regex for text dates: Month Day [Year] or Day Month [Year] (Year can be 2 or 4 digits)
+const TEXT_DATE_REGEX = /^(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:\s+(\d{2,4}))?$/i;
+const TEXT_DATE_DAY_FIRST_REGEX = /^(\d{1,2})\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+(\d{2,4}))?$/i;
+
+const VALID_CALENDAR_FORMATS = new Set(['yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy']);
 
 const PRIORITY_REGEX = /\bp(\d+)\b/gi;
 const ESTIMATE_REGEX = /\b(\d+)([mhd])\b/gi;
@@ -42,11 +48,19 @@ function isValidDate(dateStr: string): boolean {
   if (VALID_DATE_FORMATS.some(regex => regex.test(dateStr))) {
     return true;
   }
-  // Check text date format
+  // Check text date format (Month Day [Year])
   if (TEXT_DATE_REGEX.test(dateStr)) {
     const match = dateStr.match(TEXT_DATE_REGEX);
     if (match) {
       const day = parseInt(match[2], 10);
+      return day >= 1 && day <= 31;
+    }
+  }
+  // Check text date format (Day Month [Year])
+  if (TEXT_DATE_DAY_FIRST_REGEX.test(dateStr)) {
+    const match = dateStr.match(TEXT_DATE_DAY_FIRST_REGEX);
+    if (match) {
+      const day = parseInt(match[1], 10);
       return day >= 1 && day <= 31;
     }
   }
@@ -101,10 +115,27 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       const parenStart = item.item_span[0] + (match.index || 0);
 
       // Check for due dates - try text date format first (captures more), then standard format
-      // Text date: due Month Day [Year]
-      const textDueMatches = content.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{4})?)/gi);
+      // Text date: due Month Day [Year] (Year can be 2 or 4 digits)
+      const textDueMatches = content.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
       const textDueIndices = new Set<number>();
       for (const textDueMatch of textDueMatches) {
+        textDueIndices.add(textDueMatch.index || 0);
+        const dateStr = textDueMatch[1];
+        if (!isValidDate(dateStr)) {
+          const tokenStart = parenStart + 1 + (textDueMatch.index || 0);
+          warnings.push({
+            code: 'INVALID_DATE_FORMAT',
+            message: `Invalid due date format: ${dateStr}`,
+            line: item.line,
+            column: tokenStart - item.item_span[0] + 1,
+            span: [tokenStart + 4, tokenStart + 4 + dateStr.length],
+          });
+        }
+      }
+
+      // Day-first text date: due Day Month [Year] (Year can be 2 or 4 digits)
+      const textDueDayFirstMatches = content.matchAll(/\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+      for (const textDueMatch of textDueDayFirstMatches) {
         textDueIndices.add(textDueMatch.index || 0);
         const dateStr = textDueMatch[1];
         if (!isValidDate(dateStr)) {
@@ -128,6 +159,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         const dateStr = dueMatch[1];
         // Skip if this looks like the start of a text date (month name)
         if (MONTH_NAMES.has(dateStr.toLowerCase())) continue;
+        // Skip if this looks like a day number (could be start of day-first date)
+        if (/^\d{1,2}$/.test(dateStr)) continue;
 
         if (!isValidDate(dateStr)) {
           const tokenStart = parenStart + 1 + (dueMatch.index || 0);
@@ -148,10 +181,24 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         const pContent = pMatch[1];
         const pStart = item.item_span[0] + (pMatch.index || 0);
 
-        // Check text dates first
-        const textDueDatesInGroup = pContent.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{4})?)/gi);
+        // Check text dates first (month-first, year can be 2 or 4 digits)
+        const textDueDatesInGroup = pContent.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
         const textDuePositions = new Set<number>();
         for (const tdm of textDueDatesInGroup) {
+          const ds = tdm[1];
+          if (isValidDate(ds)) {
+            textDuePositions.add(tdm.index || 0);
+            const dStart = pStart + 1 + (tdm.index || 0);
+            allDueDates.push({
+              dateStr: ds,
+              span: [dStart, dStart + tdm[0].length],
+            });
+          }
+        }
+
+        // Check day-first text dates (year can be 2 or 4 digits)
+        const textDueDayFirstInGroup = pContent.matchAll(/\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+        for (const tdm of textDueDayFirstInGroup) {
           const ds = tdm[1];
           if (isValidDate(ds)) {
             textDuePositions.add(tdm.index || 0);
@@ -171,6 +218,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
           const ds = dm[1];
           // Skip if it's a month name (part of text date)
           if (MONTH_NAMES.has(ds.toLowerCase())) continue;
+          // Skip if it's a day number (part of day-first text date)
+          if (/^\d{1,2}$/.test(ds)) continue;
           if (isValidDate(ds)) {
             const dStart = pStart + 1 + (dm.index || 0);
             allDueDates.push({
@@ -285,6 +334,23 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         });
       }
     }
+  }
+
+  return { warnings };
+}
+
+export function lintScheme(scheme: Scheme): LintResult {
+  const warnings: Warning[] = [];
+
+  // Check if calendar_format is valid
+  if (!VALID_CALENDAR_FORMATS.has(scheme.calendar_format.toLowerCase())) {
+    warnings.push({
+      code: 'INVALID_CALENDAR_FORMAT',
+      message: `Invalid calendar format: '${scheme.calendar_format}'. Valid formats are: ${[...VALID_CALENDAR_FORMATS].sort().join(', ')}`,
+      line: null,
+      column: null,
+      span: null,
+    });
   }
 
   return { warnings };

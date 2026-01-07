@@ -10,9 +10,12 @@ from .parser import parse
 from .types import Warning, Scheme
 
 VALID_DATE_FORMATS = [
-    re.compile(r'^\d{4}-\d{2}-\d{2}$'),           # YYYY-MM-DD
-    re.compile(r'^\d{1,2}/\d{1,2}/\d{4}$'),       # MM/DD/YYYY
-    re.compile(r'^\d{1,2}/\d{1,2}/\d{2}$'),       # MM/DD/YY
+    re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$'),       # YYYY-MM-DD or YYYY-M-D
+    re.compile(r'^\d{2}-\d{1,2}-\d{1,2}$'),       # YY-MM-DD or YY-M-D
+    re.compile(r'^\d{4}/\d{1,2}/\d{1,2}$'),       # YYYY/MM/DD
+    re.compile(r'^\d{2}/\d{1,2}/\d{1,2}$'),       # YY/MM/DD or MM/DD/YY (ambiguous but accepted)
+    re.compile(r'^\d{1,2}/\d{1,2}/\d{4}$'),       # MM/DD/YYYY or DD/MM/YYYY
+    re.compile(r'^\d{1,2}/\d{1,2}/\d{2}$'),       # MM/DD/YY or DD/MM/YY
 ]
 
 MONTH_NAMES = {
@@ -30,11 +33,17 @@ MONTH_NAMES = {
     'december', 'dec',
 }
 
-# Regex for text dates: Month Day or Month Day Year
+# Regex for text dates: Month Day [Year] or Day Month [Year] (Year can be 2 or 4 digits)
 TEXT_DATE_REGEX = re.compile(
-    r'^(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:\s+(\d{4}))?$',
+    r'^(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:\s+(\d{2,4}))?$',
     re.IGNORECASE
 )
+TEXT_DATE_DAY_FIRST_REGEX = re.compile(
+    r'^(\d{1,2})\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+(\d{2,4}))?$',
+    re.IGNORECASE
+)
+
+VALID_CALENDAR_FORMATS = {'yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy'}
 
 
 @dataclass
@@ -55,10 +64,15 @@ def is_valid_date(date_str: str) -> bool:
     # Check standard formats
     if any(regex.match(date_str) for regex in VALID_DATE_FORMATS):
         return True
-    # Check text date format
+    # Check text date format (Month Day [Year])
     match = TEXT_DATE_REGEX.match(date_str)
     if match:
         day = int(match.group(2))
+        return 1 <= day <= 31
+    # Check text date format (Day Month [Year])
+    match = TEXT_DATE_DAY_FIRST_REGEX.match(date_str)
+    if match:
+        day = int(match.group(1))
         return 1 <= day <= 31
     return False
 
@@ -99,13 +113,30 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
             paren_start = item.item_span[0] + match.start()
 
             # Check for due dates - try text date format first (captures more), then standard format
-            # Text date: due Month Day [Year]
+            # Text date: due Month Day [Year] (Year can be 2 or 4 digits)
             text_due_pattern = re.compile(
-                r'\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{4})?)',
+                r'\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)',
+                re.IGNORECASE
+            )
+            # Day-first text date: due Day Month [Year] (Year can be 2 or 4 digits)
+            text_due_day_first_pattern = re.compile(
+                r'\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)',
                 re.IGNORECASE
             )
             text_due_indices: set[int] = set()
             for text_due_match in text_due_pattern.finditer(content):
+                text_due_indices.add(text_due_match.start())
+                date_str = text_due_match.group(1)
+                if not is_valid_date(date_str):
+                    token_start = paren_start + 1 + text_due_match.start()
+                    warnings.append(Warning(
+                        code='INVALID_DATE_FORMAT',
+                        message=f'Invalid due date format: {date_str}',
+                        line=item.line,
+                        column=token_start - item.item_span[0] + 1,
+                        span=(token_start + 4, token_start + 4 + len(date_str)),
+                    ))
+            for text_due_match in text_due_day_first_pattern.finditer(content):
                 text_due_indices.add(text_due_match.start())
                 date_str = text_due_match.group(1)
                 if not is_valid_date(date_str):
@@ -129,6 +160,9 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                 # Skip if this looks like the start of a text date (month name)
                 if date_str.lower() in MONTH_NAMES:
                     continue
+                # Skip if this looks like a day number (could be start of day-first date)
+                if re.match(r'^\d{1,2}$', date_str):
+                    continue
 
                 if not is_valid_date(date_str):
                     token_start = paren_start + 1 + due_match.start()
@@ -146,9 +180,17 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                 p_content = p_match.group(1)
                 p_start = item.item_span[0] + p_match.start()
 
-                # Check text dates first
+                # Check text dates first (month-first)
                 text_due_positions: set[int] = set()
                 for tdm in text_due_pattern.finditer(p_content):
+                    ds = tdm.group(1)
+                    if is_valid_date(ds):
+                        text_due_positions.add(tdm.start())
+                        d_start = p_start + 1 + tdm.start()
+                        all_due_dates.append((ds, (d_start, d_start + len(tdm.group(0)))))
+
+                # Check day-first text dates
+                for tdm in text_due_day_first_pattern.finditer(p_content):
                     ds = tdm.group(1)
                     if is_valid_date(ds):
                         text_due_positions.add(tdm.start())
@@ -163,6 +205,9 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                     ds = dm.group(1)
                     # Skip if it's a month name (part of text date)
                     if ds.lower() in MONTH_NAMES:
+                        continue
+                    # Skip if it's a day number (part of day-first text date)
+                    if re.match(r'^\d{1,2}$', ds):
                         continue
                     if is_valid_date(ds):
                         d_start = p_start + 1 + dm.start()
@@ -258,5 +303,22 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                     column=1,
                     span=heading_span,
                 ))
+
+    return LintResult(warnings=warnings)
+
+
+def lint_scheme(scheme: Scheme) -> LintResult:
+    """Lint a parsed scheme for invalid values."""
+    warnings: list[Warning] = []
+
+    # Check if calendar_format is valid
+    if scheme.calendar_format.lower() not in VALID_CALENDAR_FORMATS:
+        warnings.append(Warning(
+            code='INVALID_CALENDAR_FORMAT',
+            message=f"Invalid calendar format: '{scheme.calendar_format}'. Valid formats are: {', '.join(sorted(VALID_CALENDAR_FORMATS))}",
+            line=None,
+            column=None,
+            span=None,
+        ))
 
     return LintResult(warnings=warnings)

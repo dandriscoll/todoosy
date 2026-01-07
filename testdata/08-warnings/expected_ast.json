@@ -21,8 +21,8 @@
     {
       "id": "1",
       "type": "list",
-      "raw_line": "- Bad date format (due 2026/01/15)",
-      "title_text": "Bad date format (due 2026/01/15)",
+      "raw_line": "- Bad date format (due 2026/jan/15)",
+      "title_text": "Bad date format (due 2026/jan/15)",
       "metadata": {
         "due": null,
         "priority": null,

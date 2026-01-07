@@ -16,6 +16,7 @@ from todoosy import (
     query_misc,
     parse_scheme,
 )
+from todoosy.linter import lint_scheme
 
 # Get test data directory
 TEST_DIR = Path(__file__).parent.parent.parent / 'testdata'
@@ -156,6 +157,23 @@ class TestSchemeParser:
 
         assert scheme.timezone == expected_scheme['timezone']
         assert scheme.priorities == expected_scheme['priorities']
+        if 'calendar_format' in expected_scheme:
+            assert scheme.calendar_format == expected_scheme['calendar_format']
+
+    @pytest.mark.parametrize('test_case', get_test_cases())
+    def test_lint_scheme(self, test_case):
+        scheme_text = load_file(test_case, 'scheme.md')
+        expected_scheme_warnings = load_json(test_case, 'expected_scheme_warnings.json')
+
+        if not scheme_text or expected_scheme_warnings is None:
+            return  # Scheme warnings are optional
+
+        scheme = parse_scheme(scheme_text)
+        result = lint_scheme(scheme)
+
+        actual_codes = sorted([w.code for w in result.warnings])
+        expected_codes = sorted([w['code'] for w in expected_scheme_warnings])
+        assert actual_codes == expected_codes
 
 
 class TestEdgeCases:
@@ -224,3 +242,42 @@ P2 - Medium
         assert scheme.priorities['0'] == 'Critical'
         assert scheme.priorities['1'] == 'High'
         assert scheme.priorities['2'] == 'Medium'
+
+    def test_scheme_calendar_format(self):
+        scheme = parse_scheme('''
+# Calendar Format
+
+mm/dd/yyyy
+''')
+        assert scheme.calendar_format == 'mm/dd/yyyy'
+
+    def test_scheme_calendar_format_default(self):
+        scheme = parse_scheme('')
+        assert scheme.calendar_format == 'yyyy-mm-dd'
+
+    def test_lint_scheme_invalid_format(self):
+        scheme = parse_scheme('''
+# Calendar Format
+
+invalid-format
+''')
+        result = lint_scheme(scheme)
+        assert any(w.code == 'INVALID_CALENDAR_FORMAT' for w in result.warnings)
+
+    def test_lint_scheme_valid_format(self):
+        scheme = parse_scheme('''
+# Calendar Format
+
+dd/mm/yyyy
+''')
+        result = lint_scheme(scheme)
+        assert len(result.warnings) == 0
+
+    def test_day_first_text_date(self):
+        result = parse('- Task (due 15 January)')
+        assert result.ast.items[0].metadata.due is not None
+        assert result.ast.items[0].metadata.due.endswith('-01-15')
+
+    def test_day_first_text_date_with_year(self):
+        result = parse('- Task (due 20 Feb 2027)')
+        assert result.ast.items[0].metadata.due == '2027-02-20'
