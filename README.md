@@ -2,6 +2,15 @@
 
 A Markdown-based personal todo system with parser, formatter, linter, and query engine implementations in TypeScript and Python.
 
+## Try Todoosy
+
+- [Try it for free](https://todoosy.org)
+- [Python package (PyPI)](https://pypi.org/project/todoosy)
+- [JavaScript package (npm)](https://www.npmjs.com/package/todoosy)
+- [Read the specification](docs/spec.md)
+
+Or, read on to learn more about the format and tools.
+
 ## Format Overview
 
 Todoosy is a personal Markdown-based todo system. Documents remain valid CommonMark while embedding structured task metadata through text conventions.
