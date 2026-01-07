@@ -4,7 +4,7 @@ America/New_York
 
 # Priorities
 
-P0 - Critical
-P1 - High
-P2 - Normal
-P3 - Low
+p0 - Critical
+p1 - High
+p2 - Normal
+p3 - Low

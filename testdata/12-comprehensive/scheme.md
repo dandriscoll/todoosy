@@ -4,7 +4,7 @@ America/Denver
 
 # Priorities
 
-P0 - Urgent
-P1 - High
-P2 - Normal
-P3 - Backlog
+p0 - Urgent
+p1 - High
+p2 - Normal
+p3 - Backlog

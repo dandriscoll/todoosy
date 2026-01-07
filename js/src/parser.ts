@@ -12,9 +12,46 @@ const DUE_US_SHORT_REGEX = /^due\s+(\d{1,2})\/(\d{1,2})\/(\d{2})$/i;
 const PRIORITY_REGEX = /^p(\d+)$/i;
 const ESTIMATE_REGEX = /^(\d+)([mhd])$/i;
 
+const MONTH_NAMES: Record<string, number> = {
+  january: 1, jan: 1,
+  february: 2, feb: 2,
+  march: 3, mar: 3,
+  april: 4, apr: 4,
+  may: 5,
+  june: 6, jun: 6,
+  july: 7, jul: 7,
+  august: 8, aug: 8,
+  september: 9, sep: 9,
+  october: 10, oct: 10,
+  november: 11, nov: 11,
+  december: 12, dec: 12,
+};
+
 export interface ParseResult {
   ast: AST;
   warnings: Warning[];
+}
+
+function inferYear(month: number, day: number): number {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const currentDay = now.getDate();
+
+  // Calculate months difference
+  let monthsDiff = (currentMonth - month) + (currentDay > day ? 0 : 0);
+  if (currentMonth > month || (currentMonth === month && currentDay > day)) {
+    monthsDiff = (currentMonth - month) + (currentDay > day ? 0 : -1);
+    // More precise: is the date more than 3 months in the past?
+    const candidateDate = new Date(currentYear, month - 1, day);
+    const threeMonthsAgo = new Date(now);
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    if (candidateDate < threeMonthsAgo) {
+      return currentYear + 1;
+    }
+  }
+  return currentYear;
 }
 
 function parseDate(dateStr: string): { date: string | null; valid: boolean; raw: string } {
@@ -42,13 +79,58 @@ function parseDate(dateStr: string): { date: string | null; valid: boolean; raw:
   return { date: null, valid: false, raw: dateStr };
 }
 
+function parseTextDate(parts: string[]): { date: string | null; valid: boolean; partsConsumed: number } {
+  if (parts.length < 2) {
+    return { date: null, valid: false, partsConsumed: 0 };
+  }
+
+  const monthStr = parts[0].toLowerCase();
+  const month = MONTH_NAMES[monthStr];
+  if (month === undefined) {
+    return { date: null, valid: false, partsConsumed: 0 };
+  }
+
+  const dayStr = parts[1];
+  const dayMatch = dayStr.match(/^(\d{1,2})$/);
+  if (!dayMatch) {
+    return { date: null, valid: false, partsConsumed: 0 };
+  }
+  const day = parseInt(dayMatch[1], 10);
+  if (day < 1 || day > 31) {
+    return { date: null, valid: false, partsConsumed: 0 };
+  }
+
+  // Check for year
+  if (parts.length >= 3) {
+    const yearStr = parts[2];
+    const yearMatch = yearStr.match(/^(\d{4})$/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[1], 10);
+      const monthPadded = String(month).padStart(2, '0');
+      const dayPadded = String(day).padStart(2, '0');
+      return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+    }
+  }
+
+  // No year provided, infer it
+  const year = inferYear(month, day);
+  const monthPadded = String(month).padStart(2, '0');
+  const dayPadded = String(day).padStart(2, '0');
+  return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+}
+
 function parseTokensInParenGroup(content: string, groupStart: number): ParenGroup {
   const tokens: ParsedToken[] = [];
   // Split by comma and/or whitespace
   const parts = content.split(/[,\s]+/).filter(p => p.length > 0);
 
   let currentPos = 0;
-  for (const part of parts) {
+  const skipIndices = new Set<number>();
+
+  for (let i = 0; i < parts.length; i++) {
+    if (skipIndices.has(i)) continue;
+
+    const part = parts[i];
     const partStart = content.indexOf(part, currentPos);
     const absoluteStart = groupStart + 1 + partStart; // +1 for opening paren
     const absoluteEnd = absoluteStart + part.length;
@@ -56,22 +138,46 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
 
     // Check for due date
     if (part.toLowerCase() === 'due') {
-      // Look for the next part as the date
-      continue;
-    }
+      // Look for the next part(s) as the date
+      const remainingParts = parts.slice(i + 1);
+      if (remainingParts.length > 0) {
+        // First try standard date formats (single part)
+        const dateResult = parseDate(remainingParts[0]);
+        if (dateResult.valid) {
+          const nextPartStart = content.indexOf(remainingParts[0], currentPos);
+          const nextAbsoluteEnd = groupStart + 1 + nextPartStart + remainingParts[0].length;
+          tokens.push({
+            type: 'due',
+            value: dateResult.date!,
+            raw: `due ${remainingParts[0]}`,
+            start: absoluteStart,
+            end: nextAbsoluteEnd,
+          });
+          skipIndices.add(i + 1);
+          continue;
+        }
 
-    // Check if previous part was 'due'
-    const prevPartIndex = parts.indexOf(part) - 1;
-    if (prevPartIndex >= 0 && parts[prevPartIndex].toLowerCase() === 'due') {
-      const dateResult = parseDate(part);
-      if (dateResult.valid) {
-        tokens.push({
-          type: 'due',
-          value: dateResult.date!,
-          raw: `due ${part}`,
-          start: absoluteStart - 4, // Include 'due '
-          end: absoluteEnd,
-        });
+        // Try text date formats (multiple parts: Month Day [Year])
+        const textDateResult = parseTextDate(remainingParts);
+        if (textDateResult.valid) {
+          // Calculate the end position
+          let rawParts = [`due`];
+          let endPos = currentPos;
+          for (let j = 0; j < textDateResult.partsConsumed; j++) {
+            rawParts.push(remainingParts[j]);
+            skipIndices.add(i + 1 + j);
+            endPos = content.indexOf(remainingParts[j], endPos) + remainingParts[j].length;
+          }
+          const finalAbsoluteEnd = groupStart + 1 + endPos;
+          tokens.push({
+            type: 'due',
+            value: textDateResult.date!,
+            raw: rawParts.join(' '),
+            start: absoluteStart,
+            end: finalAbsoluteEnd,
+          });
+          continue;
+        }
       }
       continue;
     }

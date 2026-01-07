@@ -8,16 +8,56 @@ from typing import Optional
 
 from .types import AST, ItemNode, ItemMetadata, ParsedToken, ParenGroup, Warning
 
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
 HEADING_REGEX = re.compile(r'^(#{1,6})\s+(.*)$')
 LIST_ITEM_REGEX = re.compile(r'^(\s*)([-*]|\d+\.)\s+(.*)$')
 PRIORITY_REGEX = re.compile(r'^p(\d+)$', re.IGNORECASE)
 ESTIMATE_REGEX = re.compile(r'^(\d+)([mhd])$', re.IGNORECASE)
+
+MONTH_NAMES: dict[str, int] = {
+    'january': 1, 'jan': 1,
+    'february': 2, 'feb': 2,
+    'march': 3, 'mar': 3,
+    'april': 4, 'apr': 4,
+    'may': 5,
+    'june': 6, 'jun': 6,
+    'july': 7, 'jul': 7,
+    'august': 8, 'aug': 8,
+    'september': 9, 'sep': 9,
+    'october': 10, 'oct': 10,
+    'november': 11, 'nov': 11,
+    'december': 12, 'dec': 12,
+}
 
 
 @dataclass
 class ParseResult:
     ast: AST
     warnings: list[Warning] = field(default_factory=list)
+
+
+def infer_year(month: int, day: int) -> int:
+    """Infer the year for a date without a year. If the date is more than 3 months in the past, use next year."""
+    today = date.today()
+    current_year = today.year
+
+    # Create the candidate date in the current year
+    try:
+        candidate_date = date(current_year, month, day)
+    except ValueError:
+        # Invalid date (e.g., Feb 30), just use current year
+        return current_year
+
+    # Calculate three months ago
+    three_months_ago = today - relativedelta(months=3)
+
+    # If the candidate date is more than 3 months in the past, use next year
+    if candidate_date < three_months_ago:
+        return current_year + 1
+
+    return current_year
 
 
 def parse_date(date_str: str) -> tuple[Optional[str], bool]:
@@ -46,6 +86,40 @@ def parse_date(date_str: str) -> tuple[Optional[str], bool]:
     return None, False
 
 
+def parse_text_date(parts: list[str]) -> tuple[Optional[str], bool, int]:
+    """Parse text date format (Month Day [Year]). Returns (normalized_date, is_valid, parts_consumed)."""
+    if len(parts) < 2:
+        return None, False, 0
+
+    month_str = parts[0].lower()
+    month = MONTH_NAMES.get(month_str)
+    if month is None:
+        return None, False, 0
+
+    day_match = re.match(r'^(\d{1,2})$', parts[1])
+    if not day_match:
+        return None, False, 0
+
+    day = int(day_match.group(1))
+    if day < 1 or day > 31:
+        return None, False, 0
+
+    # Check for year
+    if len(parts) >= 3:
+        year_match = re.match(r'^(\d{4})$', parts[2])
+        if year_match:
+            year = int(year_match.group(1))
+            month_padded = str(month).zfill(2)
+            day_padded = str(day).zfill(2)
+            return f"{year}-{month_padded}-{day_padded}", True, 3
+
+    # No year provided, infer it
+    year = infer_year(month, day)
+    month_padded = str(month).zfill(2)
+    day_padded = str(day).zfill(2)
+    return f"{year}-{month_padded}-{day_padded}", True, 2
+
+
 def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
     """Parse tokens within a parentheses group."""
     tokens: list[ParsedToken] = []
@@ -53,7 +127,12 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
     parts = [p for p in parts if p]
 
     current_pos = 0
+    skip_indices: set[int] = set()
+
     for i, part in enumerate(parts):
+        if i in skip_indices:
+            continue
+
         part_start = content.find(part, current_pos)
         absolute_start = group_start + 1 + part_start  # +1 for opening paren
         absolute_end = absolute_start + len(part)
@@ -61,19 +140,41 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
 
         # Check for 'due' keyword
         if part.lower() == 'due':
-            continue
+            remaining_parts = parts[i + 1:]
+            if remaining_parts:
+                # First try standard date formats (single part)
+                date_result, valid = parse_date(remaining_parts[0])
+                if valid and date_result:
+                    next_part_start = content.find(remaining_parts[0], current_pos)
+                    next_absolute_end = group_start + 1 + next_part_start + len(remaining_parts[0])
+                    tokens.append(ParsedToken(
+                        type='due',
+                        value=date_result,
+                        raw=f"due {remaining_parts[0]}",
+                        start=absolute_start,
+                        end=next_absolute_end,
+                    ))
+                    skip_indices.add(i + 1)
+                    continue
 
-        # Check if previous part was 'due'
-        if i > 0 and parts[i - 1].lower() == 'due':
-            date, valid = parse_date(part)
-            if valid and date:
-                tokens.append(ParsedToken(
-                    type='due',
-                    value=date,
-                    raw=f"due {part}",
-                    start=absolute_start - 4,  # Include 'due '
-                    end=absolute_end,
-                ))
+                # Try text date formats (multiple parts: Month Day [Year])
+                text_date_result, text_valid, parts_consumed = parse_text_date(remaining_parts)
+                if text_valid and text_date_result:
+                    raw_parts = ['due']
+                    end_pos = current_pos
+                    for j in range(parts_consumed):
+                        raw_parts.append(remaining_parts[j])
+                        skip_indices.add(i + 1 + j)
+                        end_pos = content.find(remaining_parts[j], end_pos) + len(remaining_parts[j])
+                    final_absolute_end = group_start + 1 + end_pos
+                    tokens.append(ParsedToken(
+                        type='due',
+                        value=text_date_result,
+                        raw=' '.join(raw_parts),
+                        start=absolute_start,
+                        end=final_absolute_end,
+                    ))
+                    continue
             continue
 
         # Check for priority

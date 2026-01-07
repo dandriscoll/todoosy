@@ -1,6 +1,6 @@
 # Todoosy Format Specification
 
-**Version:** 0.1
+**Version:** 0.2
 **Status:** Draft
 
 ## Overview
@@ -106,10 +106,21 @@ Accepted date formats:
 | `YYYY-MM-DD` | `due 2026-01-10` | ISO 8601 (preferred) |
 | `MM/DD/YYYY` | `due 01/10/2026` | US format, 4-digit year |
 | `MM/DD/YY` | `due 01/10/26` | US format, 2-digit year |
+| `Month D` | `due January 7` | Full month name, no year |
+| `Mon D` | `due Jan 7` | 3-letter month abbreviation, no year |
+| `Month D YYYY` | `due January 7 2028` | Full month name with year |
+| `Mon D YYYY` | `due Jan 7 2028` | 3-letter month abbreviation with year |
+
+Month names and abbreviations are case-insensitive.
 
 Two-digit year interpretation:
 - Years 00-99 map to 2000-2099
-- Parsers MUST normalize to ISO 8601 (`YYYY-MM-DD`) internally
+
+Year inference for text dates without year:
+- If the date (in the current year) is more than 3 months in the past, the next year is assumed
+- Example: If today is October 7, 2026, "due Aug 1" (about 2 months ago) is interpreted as August 1, 2026, but "due Jun 1" (more than 3 months ago) is interpreted as June 1, 2027
+
+Parsers MUST normalize all date formats to ISO 8601 (`YYYY-MM-DD`) internally
 
 ##### Priority
 
@@ -133,15 +144,29 @@ Normalization:
 - Parsers MUST normalize to minutes internally
 - Conversion: 1h = 60m, 1d = 480m (8 working hours)
 
+##### State
+
+Format: State name (case-insensitive)
+
+Built-in states:
+- `not started` - Task has not been started (default)
+- `in progress` - Task is currently being worked on
+- `done` - Task is complete
+- `blocked` - Task is blocked by something
+
+Examples: `not started`, `in progress`, `done`, `blocked`
+
+Additional states MAY be defined in the scheme file (Section 7.4).
+
 #### 4.3 Token Bag Combination
 
 When multiple parentheses groups exist, all recognized tokens are merged:
 
 ```markdown
-- Task (p1) with details (due 2026-01-15, 2h)
+- Task (p1, in progress) with details (due 2026-01-15, 2h)
 ```
 
-Results in token bag: `{priority: 1, due: "2026-01-15", estimate: 120}`
+Results in token bag: `{priority: 1, state: "in progress", due: "2026-01-15", estimate: 120}`
 
 If duplicate token types appear, the **last occurrence wins**.
 
@@ -211,24 +236,43 @@ America/Denver
 
 #### 7.3 Priorities Section
 
-A heading `# Priorities` followed by lines defining priority labels.
+A heading `# Priorities` followed by priority definitions, one per line.
 
-Format: `P<N> - <label>`
+Format: `p<N> - <label>`
 
 ```markdown
 # Priorities
 
-P0 - Critical
-P1 - High
-P2 - Medium
-P3 - Low
+p0 - Critical
+p1 - High
+p2 - Medium
+p3 - Low
 ```
 
 Rules:
+- Each line explicitly defines a priority number and its label
+- Priority order is determined by position (first line is highest priority)
 - `N` MUST be a non-negative integer
 - Label is freeform text after the ` - ` separator
-- Priority ordering defaults to numeric ascending (0 is highest)
-- Unlisted priority numbers are valid but have no label
+- Priority numbers used in documents (`p0`, `p1`, etc.) map to these labels
+
+#### 7.4 States Section
+
+A heading `# States` followed by additional state definitions, one per line.
+
+```markdown
+# States
+
+waiting
+deferred
+cancelled
+```
+
+Rules:
+- Each line defines an additional state name
+- States are case-insensitive when matching tokens
+- Custom states extend (do not replace) the built-in states: `not started`, `in progress`, `done`, `blocked`
+- If omitted, only the built-in states are recognized
 
 ---
 
@@ -379,10 +423,10 @@ America/New_York
 
 # Priorities
 
-P0 - Urgent
-P1 - High
-P2 - Normal
-P3 - Backlog
+p0 - Urgent
+p1 - High
+p2 - Normal
+p3 - Backlog
 ```
 
 **tasks.md:**
