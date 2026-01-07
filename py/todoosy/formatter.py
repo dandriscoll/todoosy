@@ -2,8 +2,17 @@
 Todoosy Formatter
 """
 
+from typing import Optional
 from .parser import parse
-from .types import ItemNode, ItemMetadata
+from .types import ItemNode, ItemMetadata, Scheme
+
+
+def parse_misc_location(misc: str) -> tuple[str, str]:
+    """Parse misc location string into (filename, heading)."""
+    slash_index = misc.find('/')
+    if slash_index == -1:
+        return (misc, 'Misc')
+    return (misc[:slash_index], misc[slash_index + 1:])
 
 
 def format_metadata(metadata: ItemMetadata) -> str:
@@ -56,17 +65,22 @@ def format_comments(comments: list[str], is_list_item: bool, indent: int) -> lis
     return list(comments)
 
 
-def format(text: str) -> str:
+def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None) -> str:
     """Format a todoosy document."""
     result = parse(text)
     ast = result.ast
     lines: list[str] = []
     item_map = {item.id: item for item in ast.items}
 
+    # Determine misc location from scheme or use default
+    misc_filename, misc_heading = parse_misc_location(scheme.misc if scheme else 'todoosy.md/Misc')
+    # If no filename provided, assume it could be the misc file (backward compatibility)
+    is_misc_file = filename is None or filename == misc_filename
+
     # Track Misc section
     misc_section_id = None
     for item in ast.items:
-        if item.type == 'heading' and item.title_text == 'Misc' and item.level == 1:
+        if item.type == 'heading' and item.title_text == misc_heading and item.level == 1:
             misc_section_id = item.id
             break
 
@@ -113,27 +127,28 @@ def format(text: str) -> str:
         if root_id != misc_section_id:
             format_item(root_id, 0, False)
 
-    # Add Misc section at the end
-    if lines and lines[-1] != '':
-        lines.append('')
-    lines.append('# Misc')
+    # Add Misc section at the end (only for the misc file)
+    if is_misc_file:
+        if lines and lines[-1] != '':
+            lines.append('')
+        lines.append(f'# {misc_heading}')
 
-    # Add Misc items if they exist
-    if misc_section_id:
-        misc_item = item_map[misc_section_id]
-        if misc_item.comments:
-            lines.append('')
-            lines.extend(misc_item.comments)
-        if misc_item.children:
-            lines.append('')
-            for child_id in misc_item.children:
-                child = item_map[child_id]
-                lines.append(format_item_line(child, 0))
-                formatted_comments = format_comments(
-                    child.comments,
-                    child.type == 'list',
-                    0
-                )
-                lines.extend(formatted_comments)
+        # Add Misc items if they exist
+        if misc_section_id:
+            misc_item = item_map[misc_section_id]
+            if misc_item.comments:
+                lines.append('')
+                lines.extend(misc_item.comments)
+            if misc_item.children:
+                lines.append('')
+                for child_id in misc_item.children:
+                    child = item_map[child_id]
+                    lines.append(format_item_line(child, 0))
+                    formatted_comments = format_comments(
+                        child.comments,
+                        child.type == 'list',
+                        0
+                    )
+                    lines.extend(formatted_comments)
 
     return '\n'.join(lines) + '\n'

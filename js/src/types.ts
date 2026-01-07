@@ -67,6 +67,7 @@ export interface MiscResult {
 export interface Scheme {
   timezone: string | null;
   priorities: Record<string, string>;
+  misc: string; // format: "filename/headingname", default: "todoosy.md/Misc"
 }
 
 export interface ParsedToken {

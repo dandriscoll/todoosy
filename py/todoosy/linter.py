@@ -42,6 +42,14 @@ class LintResult:
     warnings: list[Warning] = field(default_factory=list)
 
 
+def parse_misc_location(misc: str) -> tuple[str, str]:
+    """Parse misc location string into (filename, heading)."""
+    slash_index = misc.find('/')
+    if slash_index == -1:
+        return (misc, 'Misc')
+    return (misc[:slash_index], misc[slash_index + 1:])
+
+
 def is_valid_date(date_str: str) -> bool:
     """Check if a date string is in a valid format."""
     # Check standard formats
@@ -55,12 +63,17 @@ def is_valid_date(date_str: str) -> bool:
     return False
 
 
-def lint(text: str, scheme: Optional[Scheme] = None) -> LintResult:
+def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None) -> LintResult:
     """Lint a todoosy document."""
     result = parse(text)
     ast = result.ast
     warnings: list[Warning] = []
     lines = text.split('\n')
+
+    # Determine misc location from scheme or use default
+    misc_filename, misc_heading = parse_misc_location(scheme.misc if scheme else 'todoosy.md/Misc')
+    # If no filename provided, assume it could be the misc file (backward compatibility)
+    is_misc_file = filename is None or filename == misc_filename
 
     misc_section_line = None
     misc_section_span = None
@@ -70,12 +83,12 @@ def lint(text: str, scheme: Optional[Scheme] = None) -> LintResult:
     for item in ast.items:
         raw_line = item.raw_line
 
-        # Check for Misc section
-        if item.type == 'heading':
+        # Check for Misc section (only relevant for the misc file)
+        if is_misc_file and item.type == 'heading':
             if misc_section_line is not None:
                 # Any heading after Misc (including duplicate Misc) is an error
                 headings_after_misc.append((item.line, item.item_span))
-            elif item.title_text == 'Misc' and item.level == 1:
+            elif item.title_text == misc_heading and item.level == 1:
                 misc_section_line = item.line
                 misc_section_span = item.item_span
 
@@ -218,31 +231,32 @@ def lint(text: str, scheme: Optional[Scheme] = None) -> LintResult:
                         ))
                 current_offset += len(lines[comment_line_index]) + 1 if comment_line_index < len(lines) else 1
 
-    # Check for Misc section issues
-    if misc_section_line is None:
-        warnings.append(Warning(
-            code='MISC_MISSING',
-            message="Document is missing required '# Misc' section",
-            line=None,
-            column=None,
-            span=None,
-        ))
-    elif headings_after_misc:
-        warnings.append(Warning(
-            code='MISC_NOT_AT_EOF',
-            message="'# Misc' section must be at end of file",
-            line=misc_section_line,
-            column=1,
-            span=misc_section_span,
-        ))
-
-        for heading_line, heading_span in headings_after_misc:
+    # Check for Misc section issues (only for the misc file)
+    if is_misc_file:
+        if misc_section_line is None:
             warnings.append(Warning(
-                code='CONTENT_AFTER_MISC',
-                message="Heading found after '# Misc' section",
-                line=heading_line,
-                column=1,
-                span=heading_span,
+                code='MISC_MISSING',
+                message=f"Document is missing required '# {misc_heading}' section",
+                line=None,
+                column=None,
+                span=None,
             ))
+        elif headings_after_misc:
+            warnings.append(Warning(
+                code='MISC_NOT_AT_EOF',
+                message=f"'# {misc_heading}' section must be at end of file",
+                line=misc_section_line,
+                column=1,
+                span=misc_section_span,
+            ))
+
+            for heading_line, heading_span in headings_after_misc:
+                warnings.append(Warning(
+                    code='CONTENT_AFTER_MISC',
+                    message=f"Heading found after '# {misc_heading}' section",
+                    line=heading_line,
+                    column=1,
+                    span=heading_span,
+                ))
 
     return LintResult(warnings=warnings)

@@ -86,14 +86,28 @@ export function queryUpcoming(text: string, scheme?: Scheme): UpcomingResult {
   return { items };
 }
 
-export function queryMisc(text: string): MiscResult {
+function parseMiscLocation(misc: string): { filename: string; heading: string } {
+  const slashIndex = misc.indexOf('/');
+  if (slashIndex === -1) {
+    return { filename: misc, heading: 'Misc' };
+  }
+  return {
+    filename: misc.substring(0, slashIndex),
+    heading: misc.substring(slashIndex + 1),
+  };
+}
+
+export function queryMisc(text: string, scheme?: Scheme): MiscResult {
   const { ast } = parse(text);
   const items: MiscItem[] = [];
+
+  // Determine the heading name from scheme or use default
+  const miscLocation = parseMiscLocation(scheme?.misc ?? 'todoosy.md/Misc');
 
   // Find the Misc section
   let miscSectionId: string | null = null;
   for (const item of ast.items) {
-    if (item.type === 'heading' && item.title_text === 'Misc' && item.level === 1) {
+    if (item.type === 'heading' && item.title_text === miscLocation.heading && item.level === 1) {
       miscSectionId = item.id;
       break;
     }

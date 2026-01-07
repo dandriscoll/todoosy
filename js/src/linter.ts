@@ -53,10 +53,26 @@ function isValidDate(dateStr: string): boolean {
   return false;
 }
 
-export function lint(text: string, scheme?: Scheme): LintResult {
+function parseMiscLocation(misc: string): { filename: string; heading: string } {
+  const slashIndex = misc.indexOf('/');
+  if (slashIndex === -1) {
+    return { filename: misc, heading: 'Misc' };
+  }
+  return {
+    filename: misc.substring(0, slashIndex),
+    heading: misc.substring(slashIndex + 1),
+  };
+}
+
+export function lint(text: string, scheme?: Scheme, filename?: string): LintResult {
   const { ast } = parse(text);
   const warnings: Warning[] = [];
   const lines = text.split('\n');
+
+  // Determine misc location from scheme or use default
+  const miscLocation = parseMiscLocation(scheme?.misc ?? 'todoosy.md/Misc');
+  // If no filename provided, assume it could be the misc file (backward compatibility)
+  const isMiscFile = filename === undefined || filename === miscLocation.filename;
 
   let miscSectionLine: number | null = null;
   let miscSectionSpan: [number, number] | null = null;
@@ -67,12 +83,12 @@ export function lint(text: string, scheme?: Scheme): LintResult {
     const lineIndex = item.line - 1;
     const rawLine = item.raw_line;
 
-    // Check for Misc section
-    if (item.type === 'heading') {
+    // Check for Misc section (only relevant for the misc file)
+    if (isMiscFile && item.type === 'heading') {
       if (miscSectionLine !== null) {
         // Any heading after Misc (including duplicate Misc) is an error
         headingsAfterMisc.push({ line: item.line, span: item.item_span });
-      } else if (item.title_text === 'Misc' && item.level === 1) {
+      } else if (item.title_text === miscLocation.heading && item.level === 1) {
         miscSectionLine = item.line;
         miscSectionSpan = item.item_span;
       }
@@ -238,34 +254,36 @@ export function lint(text: string, scheme?: Scheme): LintResult {
     }
   }
 
-  // Check for Misc section issues
-  if (miscSectionLine === null) {
-    warnings.push({
-      code: 'MISC_MISSING',
-      message: "Document is missing required '# Misc' section",
-      line: null,
-      column: null,
-      span: null,
-    });
-  } else if (headingsAfterMisc.length > 0) {
-    // Misc is not at EOF
-    warnings.push({
-      code: 'MISC_NOT_AT_EOF',
-      message: "'# Misc' section must be at end of file",
-      line: miscSectionLine,
-      column: 1,
-      span: miscSectionSpan,
-    });
-
-    // Content after Misc warning for each heading
-    for (const heading of headingsAfterMisc) {
+  // Check for Misc section issues (only for the misc file)
+  if (isMiscFile) {
+    if (miscSectionLine === null) {
       warnings.push({
-        code: 'CONTENT_AFTER_MISC',
-        message: "Heading found after '# Misc' section",
-        line: heading.line,
-        column: 1,
-        span: heading.span,
+        code: 'MISC_MISSING',
+        message: `Document is missing required '# ${miscLocation.heading}' section`,
+        line: null,
+        column: null,
+        span: null,
       });
+    } else if (headingsAfterMisc.length > 0) {
+      // Misc is not at EOF
+      warnings.push({
+        code: 'MISC_NOT_AT_EOF',
+        message: `'# ${miscLocation.heading}' section must be at end of file`,
+        line: miscSectionLine,
+        column: 1,
+        span: miscSectionSpan,
+      });
+
+      // Content after Misc warning for each heading
+      for (const heading of headingsAfterMisc) {
+        warnings.push({
+          code: 'CONTENT_AFTER_MISC',
+          message: `Heading found after '# ${miscLocation.heading}' section`,
+          line: heading.line,
+          column: 1,
+          span: heading.span,
+        });
+      }
     }
   }
 

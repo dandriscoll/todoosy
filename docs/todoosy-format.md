@@ -190,18 +190,23 @@ If duplicate token types appear, the **last occurrence wins**.
 
 #### 5.1 Definition
 
-A heading with the exact text `# Misc` (case-sensitive) is the **reserved misc section**.
+By default, a heading with the exact text `# Misc` (case-sensitive) in a file named `todoosy.md` is the **reserved misc section**.
 
-- Items under `# Misc` are called **misc items**
+- Items under the misc heading are called **misc items**
 - The misc section is intended for uncategorized or quick-capture items
 - The misc section SHOULD contain a flat list (no deep nesting)
+- The location and heading name can be configured in the scheme file (Section 7.5)
 
 #### 5.2 Position Requirements
 
-- The `# Misc` heading MUST be the final heading in the document
-- No other headings MAY appear after `# Misc`
-- The formatter MUST move `# Misc` to EOF if it appears elsewhere
-- The linter MUST warn if any heading appears after `# Misc`
+These requirements only apply to the file designated as the misc file:
+
+- The misc heading MUST be the final heading in the document
+- No other headings MAY appear after the misc heading
+- The formatter MUST move the misc heading to EOF if it appears elsewhere
+- The linter MUST warn if any heading appears after the misc heading
+
+For files that are not the designated misc file, these requirements do not apply and no misc section is expected.
 
 ### 6. Views
 
@@ -280,6 +285,27 @@ Rules:
 - Progress states are case-insensitive when matching tokens
 - Custom progress states extend (do not replace) the built-in states: `done`, `deleted`, `in progress`, `blocked`
 - If omitted, only the built-in progress states are recognized
+
+#### 7.5 Misc Section
+
+A heading `# Misc` followed by a single line specifying the location of the misc section.
+
+Format: `filename/headingname`
+
+```markdown
+# Misc
+
+todoosy.md/Misc
+```
+
+Rules:
+- The format is `filename/headingname` where:
+  - `filename` is the name of the file containing the misc section
+  - `headingname` is the text of the heading that serves as the misc section
+- Default value if omitted: `todoosy.md/Misc`
+- This setting enables multi-file organization while maintaining a single designated misc section
+- The linter and formatter only enforce misc section rules (position at EOF, etc.) when operating on the specified file
+- For files that do not match the configured misc filename, no misc section requirements apply
 
 ---
 
@@ -436,7 +462,7 @@ p2 - Normal
 p3 - Backlog
 ```
 
-**tasks.md:**
+**todoosy.md:**
 ```markdown
 # Work
 
@@ -463,6 +489,47 @@ Sprint tasks for this week.
 - Random idea from shower
 ```
 
+### Example 10: Multi-File Organization with Custom Misc Location
+
+**todoosy.scheme.md:**
+```markdown
+# Timezone
+
+America/New_York
+
+# Misc
+
+inbox.md/Inbox
+```
+
+**work.md:**
+```markdown
+# Work Projects
+
+- Project Alpha (p1)
+- Project Beta (p2)
+```
+
+**inbox.md:**
+```markdown
+# Quick Notes
+
+Some context about incoming items.
+
+- Review meeting notes
+
+# Inbox
+
+- Random thought to process
+- Quick idea from shower
+- New item to categorize
+```
+
+**Interpretation:**
+- The misc section is in `inbox.md` under the heading `# Inbox`
+- `work.md` has no misc section requirement (linter won't warn)
+- `inbox.md` requires `# Inbox` to be the final heading (linter will warn if not)
+
 ---
 
 ## Ambiguities and Non-Goals
@@ -483,9 +550,13 @@ The built-in progress states (`done`, `deleted`, `in progress`, `blocked`) cover
 
 ### Multi-File Vaults
 
-The specification defines single-file behavior only. Linking between files, vault-wide queries, or file organization conventions are not specified.
+The specification supports organizing todos across multiple `.md` files with a configurable misc section location (Section 7.5). However, the following are not specified:
+- Linking between files
+- Vault-wide queries
+- File organization conventions
+- File discovery mechanisms
 
-**Rationale:** Multi-file support requires decisions about file discovery, relative paths, and cross-file references.
+**Rationale:** Full multi-file support requires decisions about relative paths and cross-file references. The current support allows organizing content across files while maintaining a single designated misc section.
 
 ### Conflict-Free Merges
 

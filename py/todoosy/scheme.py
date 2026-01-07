@@ -7,13 +7,14 @@ from .types import Scheme
 
 TIMEZONE_HEADING_REGEX = re.compile(r'^#\s+Timezone\s*$', re.IGNORECASE)
 PRIORITIES_HEADING_REGEX = re.compile(r'^#\s+Priorities\s*$', re.IGNORECASE)
+MISC_HEADING_REGEX = re.compile(r'^#\s+Misc\s*$', re.IGNORECASE)
 PRIORITY_LINE_REGEX = re.compile(r'^[*\-]?\s*P(\d+)\s*[-–—]\s*(.+)$', re.IGNORECASE)
 
 
 def parse_scheme(text: str) -> Scheme:
     """Parse a todoosy scheme file."""
     lines = text.split('\n')
-    scheme = Scheme(timezone=None, priorities={})
+    scheme = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc')
 
     current_section = 'none'
 
@@ -27,6 +28,10 @@ def parse_scheme(text: str) -> Scheme:
 
         if PRIORITIES_HEADING_REGEX.match(trimmed):
             current_section = 'priorities'
+            continue
+
+        if MISC_HEADING_REGEX.match(trimmed):
+            current_section = 'misc'
             continue
 
         # Check if we hit another heading (any level)
@@ -56,5 +61,10 @@ def parse_scheme(text: str) -> Scheme:
                     level = alt_match.group(1)
                     label = alt_match.group(2).strip()
                     scheme.priorities[level] = label
+
+        elif current_section == 'misc':
+            # First non-empty line after Misc heading is the misc location (filename/headingname)
+            if trimmed and not trimmed.startswith('#'):
+                scheme.misc = trimmed
 
     return scheme

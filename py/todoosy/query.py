@@ -77,16 +77,27 @@ def query_upcoming(text: str, scheme: Optional[Scheme] = None) -> UpcomingResult
     return UpcomingResult(items=items)
 
 
-def query_misc(text: str) -> MiscResult:
+def parse_misc_location(misc: str) -> tuple[str, str]:
+    """Parse misc location string into (filename, heading)."""
+    slash_index = misc.find('/')
+    if slash_index == -1:
+        return (misc, 'Misc')
+    return (misc[:slash_index], misc[slash_index + 1:])
+
+
+def query_misc(text: str, scheme: Optional[Scheme] = None) -> MiscResult:
     """Get all items under the Misc section."""
     result = parse(text)
     ast = result.ast
     items: list[MiscItem] = []
 
+    # Determine the heading name from scheme or use default
+    _, misc_heading = parse_misc_location(scheme.misc if scheme else 'todoosy.md/Misc')
+
     # Find the Misc section
     misc_section_id = None
     for item in ast.items:
-        if item.type == 'heading' and item.title_text == 'Misc' and item.level == 1:
+        if item.type == 'heading' and item.title_text == misc_heading and item.level == 1:
             misc_section_id = item.id
             break
 

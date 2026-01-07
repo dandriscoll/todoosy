@@ -3,7 +3,18 @@
  */
 
 import { parse } from './parser.js';
-import type { ItemNode, ItemMetadata } from './types.js';
+import type { ItemNode, ItemMetadata, Scheme } from './types.js';
+
+function parseMiscLocation(misc: string): { filename: string; heading: string } {
+  const slashIndex = misc.indexOf('/');
+  if (slashIndex === -1) {
+    return { filename: misc, heading: 'Misc' };
+  }
+  return {
+    filename: misc.substring(0, slashIndex),
+    heading: misc.substring(slashIndex + 1),
+  };
+}
 
 function formatMetadata(metadata: ItemMetadata): string {
   const parts: string[] = [];
@@ -60,7 +71,7 @@ function formatComments(comments: string[], isListItem: boolean, indent: number)
   return comments;
 }
 
-export function format(text: string): string {
+export function format(text: string, scheme?: Scheme, filename?: string): string {
   const { ast } = parse(text);
   const lines: string[] = [];
   const itemMap = new Map<string, ItemNode>();
@@ -69,12 +80,17 @@ export function format(text: string): string {
     itemMap.set(item.id, item);
   }
 
+  // Determine misc location from scheme or use default
+  const miscLocation = parseMiscLocation(scheme?.misc ?? 'todoosy.md/Misc');
+  // If no filename provided, assume it could be the misc file (backward compatibility)
+  const isMiscFile = filename === undefined || filename === miscLocation.filename;
+
   // Track Misc section
   let miscSectionId: string | null = null;
 
-  // Find existing Misc section
+  // Find existing Misc section (using configured heading name)
   for (const item of ast.items) {
-    if (item.type === 'heading' && item.title_text === 'Misc' && item.level === 1) {
+    if (item.type === 'heading' && item.title_text === miscLocation.heading && item.level === 1) {
       miscSectionId = item.id;
       break;
     }
@@ -137,31 +153,33 @@ export function format(text: string): string {
     }
   }
 
-  // Add Misc section at the end
-  if (lines.length > 0 && lines[lines.length - 1] !== '') {
-    lines.push('');
-  }
-  lines.push('# Misc');
-
-  // Add Misc items if they exist
-  if (miscSectionId) {
-    const miscItem = itemMap.get(miscSectionId)!;
-    if (miscItem.comments.length > 0) {
+  // Add Misc section at the end (only for the misc file)
+  if (isMiscFile) {
+    if (lines.length > 0 && lines[lines.length - 1] !== '') {
       lines.push('');
-      lines.push(...miscItem.comments);
     }
-    if (miscItem.children.length > 0) {
-      lines.push('');
-      for (const childId of miscItem.children) {
-        // Format misc children - they start at indent 0
-        const child = itemMap.get(childId)!;
-        lines.push(formatItemLine(child, 0));
-        const formattedComments = formatComments(
-          child.comments,
-          child.type === 'list',
-          0
-        );
-        lines.push(...formattedComments);
+    lines.push(`# ${miscLocation.heading}`);
+
+    // Add Misc items if they exist
+    if (miscSectionId) {
+      const miscItem = itemMap.get(miscSectionId)!;
+      if (miscItem.comments.length > 0) {
+        lines.push('');
+        lines.push(...miscItem.comments);
+      }
+      if (miscItem.children.length > 0) {
+        lines.push('');
+        for (const childId of miscItem.children) {
+          // Format misc children - they start at indent 0
+          const child = itemMap.get(childId)!;
+          lines.push(formatItemLine(child, 0));
+          const formattedComments = formatComments(
+            child.comments,
+            child.type === 'list',
+            0
+          );
+          lines.push(...formattedComments);
+        }
       }
     }
   }

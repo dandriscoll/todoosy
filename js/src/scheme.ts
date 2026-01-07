@@ -6,6 +6,7 @@ import type { Scheme } from './types.js';
 
 const TIMEZONE_HEADING_REGEX = /^#\s+Timezone\s*$/i;
 const PRIORITIES_HEADING_REGEX = /^#\s+Priorities\s*$/i;
+const MISC_HEADING_REGEX = /^#\s+Misc\s*$/i;
 const PRIORITY_LINE_REGEX = /^[*\-]?\s*P(\d+)\s*[-–—]\s*(.+)$/i;
 
 export function parseScheme(text: string): Scheme {
@@ -13,9 +14,10 @@ export function parseScheme(text: string): Scheme {
   const scheme: Scheme = {
     timezone: null,
     priorities: {},
+    misc: 'todoosy.md/Misc',
   };
 
-  let currentSection: 'none' | 'timezone' | 'priorities' = 'none';
+  let currentSection: 'none' | 'timezone' | 'priorities' | 'misc' = 'none';
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -28,6 +30,11 @@ export function parseScheme(text: string): Scheme {
 
     if (PRIORITIES_HEADING_REGEX.test(trimmed)) {
       currentSection = 'priorities';
+      continue;
+    }
+
+    if (MISC_HEADING_REGEX.test(trimmed)) {
+      currentSection = 'misc';
       continue;
     }
 
@@ -63,6 +70,11 @@ export function parseScheme(text: string): Scheme {
           const label = altMatch[2].trim();
           scheme.priorities[level] = label;
         }
+      }
+    } else if (currentSection === 'misc') {
+      // First non-empty line after Misc heading is the misc location (filename/headingname)
+      if (trimmed && !trimmed.startsWith('#')) {
+        scheme.misc = trimmed;
       }
     }
   }

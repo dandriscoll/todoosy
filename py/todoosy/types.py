@@ -66,6 +66,7 @@ class MiscItem:
 class Scheme:
     timezone: Optional[str] = None
     priorities: dict[str, str] = field(default_factory=dict)
+    misc: str = "todoosy.md/Misc"  # format: "filename/headingname"
 
 
 @dataclass
