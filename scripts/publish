@@ -1,0 +1,226 @@
+#!/bin/bash
+set -e
+
+# Publish script for todoosy Python and JavaScript packages
+# Usage: ./scripts/publish [options]
+#
+# Options:
+#   --py         Publish only Python package
+#   --js         Publish only JavaScript package
+#   --dry-run    Build and test without publishing
+#   --skip-tests Skip running tests
+#   --help       Show this help message
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+PY_DIR="$ROOT_DIR/py"
+JS_DIR="$ROOT_DIR/js"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default options
+PUBLISH_PY=true
+PUBLISH_JS=true
+DRY_RUN=false
+SKIP_TESTS=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --py)
+            PUBLISH_JS=false
+            shift
+            ;;
+        --js)
+            PUBLISH_PY=false
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --skip-tests)
+            SKIP_TESTS=true
+            shift
+            ;;
+        --help)
+            echo "Publish script for todoosy Python and JavaScript packages"
+            echo ""
+            echo "Usage: ./scripts/publish [options]"
+            echo ""
+            echo "Options:"
+            echo "  --py         Publish only Python package"
+            echo "  --js         Publish only JavaScript package"
+            echo "  --dry-run    Build and test without publishing"
+            echo "  --skip-tests Skip running tests"
+            echo "  --help       Show this help message"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            exit 1
+            ;;
+    esac
+done
+
+log() {
+    echo -e "${BLUE}==>${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+warn() {
+    echo -e "${YELLOW}!${NC} $1"
+}
+
+error() {
+    echo -e "${RED}✗${NC} $1"
+    exit 1
+}
+
+# Get version from pyproject.toml
+get_py_version() {
+    grep '^version = ' "$PY_DIR/pyproject.toml" | sed 's/version = "\(.*\)"/\1/'
+}
+
+# Get version from package.json
+get_js_version() {
+    grep '"version"' "$JS_DIR/package.json" | sed 's/.*"version": "\(.*\)".*/\1/'
+}
+
+# Check versions match
+check_versions() {
+    local py_version=$(get_py_version)
+    local js_version=$(get_js_version)
+
+    if [[ "$py_version" != "$js_version" ]]; then
+        error "Version mismatch: Python=$py_version, JavaScript=$js_version"
+    fi
+
+    echo "$py_version"
+}
+
+# Build and publish Python package
+publish_python() {
+    log "Building Python package..."
+    cd "$PY_DIR"
+
+    # Clean previous builds
+    rm -rf dist/ build/ *.egg-info/
+
+    # Run tests
+    if [[ "$SKIP_TESTS" == false ]]; then
+        log "Running Python tests..."
+        python -m pytest tests/ -v
+        success "Python tests passed"
+    fi
+
+    # Build
+    python -m build
+    success "Python package built"
+
+    # Publish
+    if [[ "$DRY_RUN" == false ]]; then
+        log "Publishing to PyPI..."
+        python -m twine upload dist/*
+        success "Published to PyPI"
+    else
+        warn "Dry run - skipping PyPI upload"
+        log "Would upload: $(ls dist/)"
+    fi
+}
+
+# Build and publish JavaScript package
+publish_javascript() {
+    log "Building JavaScript package..."
+    cd "$JS_DIR"
+
+    # Clean previous builds
+    rm -rf dist/
+
+    # Install dependencies if needed
+    if [[ ! -d "node_modules" ]]; then
+        log "Installing npm dependencies..."
+        npm install
+    fi
+
+    # Run tests
+    if [[ "$SKIP_TESTS" == false ]]; then
+        log "Running JavaScript tests..."
+        npm test
+        success "JavaScript tests passed"
+    fi
+
+    # Build
+    npm run build
+    success "JavaScript package built"
+
+    # Publish
+    if [[ "$DRY_RUN" == false ]]; then
+        log "Publishing to npm..."
+        npm publish
+        success "Published to npm"
+    else
+        warn "Dry run - skipping npm publish"
+        npm publish --dry-run 2>&1 | head -20
+    fi
+}
+
+# Activate Python venv if it exists
+activate_venv() {
+    if [[ -d "$PY_DIR/.venv" ]]; then
+        source "$PY_DIR/.venv/bin/activate"
+    fi
+}
+
+# Main
+main() {
+    log "Todoosy Publish Script"
+    echo ""
+
+    # Check versions
+    VERSION=$(check_versions)
+    log "Version: $VERSION"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        warn "Running in dry-run mode"
+    fi
+    echo ""
+
+    # Check for required tools
+    if [[ "$PUBLISH_PY" == true ]]; then
+        # Activate venv first if available
+        activate_venv
+        command -v python >/dev/null 2>&1 || error "Python is required"
+        python -c "import build" 2>/dev/null || error "Python 'build' module required: pip install build"
+        if [[ "$DRY_RUN" == false ]]; then
+            python -c "import twine" 2>/dev/null || error "Python 'twine' module required: pip install twine"
+        fi
+    fi
+
+    if [[ "$PUBLISH_JS" == true ]]; then
+        command -v npm >/dev/null 2>&1 || error "npm is required"
+    fi
+
+    # Publish packages
+    if [[ "$PUBLISH_PY" == true ]]; then
+        publish_python
+        echo ""
+    fi
+
+    if [[ "$PUBLISH_JS" == true ]]; then
+        publish_javascript
+        echo ""
+    fi
+
+    success "Done! Published version $VERSION"
+}
+
+main
