@@ -4,8 +4,8 @@
       "id": "0",
       "type": "heading",
       "level": 1,
-      "raw_line": "# Work",
-      "title_text": "Work",
+      "raw_line": "# Active Tasks",
+      "title_text": "Active Tasks",
       "metadata": {
         "due": null,
         "priority": null,
@@ -13,25 +13,17 @@
         "progress": null
       },
       "comments": [],
-      "children": [
-        "1"
-      ],
-      "item_span": [
-        0,
-        6
-      ],
-      "subtree_span": [
-        0,
-        24
-      ],
+      "children": ["1"],
+      "item_span": [0, 14],
+      "subtree_span": [0, 26],
       "line": 1,
       "column": 1
     },
     {
       "id": "1",
       "type": "list",
-      "raw_line": "- General task",
-      "title_text": "General task",
+      "raw_line": "- Task one",
+      "title_text": "Task one",
       "metadata": {
         "due": null,
         "priority": null,
@@ -40,14 +32,8 @@
       },
       "comments": [],
       "children": [],
-      "item_span": [
-        8,
-        22
-      ],
-      "subtree_span": [
-        8,
-        22
-      ],
+      "item_span": [16, 26],
+      "subtree_span": [16, 26],
       "line": 3,
       "column": 1
     },
@@ -55,182 +41,152 @@
       "id": "2",
       "type": "heading",
       "level": 2,
-      "raw_line": "## Backend",
-      "title_text": "Backend",
+      "raw_line": "## Completed Section (done)",
+      "title_text": "Completed Section",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "done"
       },
       "comments": [],
-      "children": [
-        "3",
-        "4"
-      ],
-      "item_span": [
-        24,
-        34
-      ],
-      "subtree_span": [
-        24,
-        68
-      ],
+      "children": ["3"],
+      "item_span": [28, 55],
+      "subtree_span": [28, 74],
       "line": 5,
       "column": 1
     },
     {
       "id": "3",
       "type": "list",
-      "raw_line": "- API task",
-      "title_text": "API task",
+      "raw_line": "- Task two (done)",
+      "title_text": "Task two",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "done"
       },
       "comments": [],
       "children": [],
-      "item_span": [
-        36,
-        46
-      ],
-      "subtree_span": [
-        36,
-        46
-      ],
+      "item_span": [57, 74],
+      "subtree_span": [57, 74],
       "line": 7,
       "column": 1
     },
     {
       "id": "4",
-      "type": "list",
-      "raw_line": "- Database task",
-      "title_text": "Database task",
+      "type": "heading",
+      "level": 2,
+      "raw_line": "## In Progress Section (in progress)",
+      "title_text": "In Progress Section",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "in progress"
       },
       "comments": [],
-      "children": [],
-      "item_span": [
-        47,
-        62
-      ],
-      "subtree_span": [
-        47,
-        62
-      ],
-      "line": 8,
+      "children": ["5"],
+      "item_span": [76, 112],
+      "subtree_span": [76, 140],
+      "line": 9,
       "column": 1
     },
     {
       "id": "5",
-      "type": "heading",
-      "level": 2,
-      "raw_line": "## Frontend",
-      "title_text": "Frontend",
+      "type": "list",
+      "raw_line": "- Task three (in progress)",
+      "title_text": "Task three",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "in progress"
       },
       "comments": [],
-      "children": [
-        "6"
-      ],
-      "item_span": [
-        64,
-        75
-      ],
-      "subtree_span": [
-        64,
-        88
-      ],
-      "line": 10,
+      "children": [],
+      "item_span": [114, 140],
+      "subtree_span": [114, 140],
+      "line": 11,
       "column": 1
     },
     {
       "id": "6",
-      "type": "list",
-      "raw_line": "- UI task",
-      "title_text": "UI task",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Archived (deleted)",
+      "title_text": "Archived",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "deleted"
       },
       "comments": [],
-      "children": [],
-      "item_span": [
-        77,
-        86
-      ],
-      "subtree_span": [
-        77,
-        86
-      ],
-      "line": 12,
+      "children": ["7"],
+      "item_span": [142, 162],
+      "subtree_span": [142, 184],
+      "line": 13,
       "column": 1
     },
     {
       "id": "7",
-      "type": "heading",
-      "level": 1,
-      "raw_line": "# Personal",
-      "title_text": "Personal",
+      "type": "list",
+      "raw_line": "- Old task (deleted)",
+      "title_text": "Old task",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "deleted"
       },
       "comments": [],
-      "children": [
-        "8"
-      ],
-      "item_span": [
-        88,
-        98
-      ],
-      "subtree_span": [
-        88,
-        114
-      ],
-      "line": 14,
+      "children": [],
+      "item_span": [164, 184],
+      "subtree_span": [164, 184],
+      "line": 15,
       "column": 1
     },
     {
       "id": "8",
-      "type": "list",
-      "raw_line": "- Home task",
-      "title_text": "Home task",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Blocked Project (blocked)",
+      "title_text": "Blocked Project",
       "metadata": {
         "due": null,
         "priority": null,
         "estimate_minutes": null,
-        "progress": null
+        "progress": "blocked"
       },
       "comments": [],
-      "children": [],
-      "item_span": [
-        100,
-        111
-      ],
-      "subtree_span": [
-        100,
-        111
-      ],
-      "line": 16,
+      "children": ["9"],
+      "item_span": [186, 213],
+      "subtree_span": [186, 239],
+      "line": 17,
       "column": 1
     },
     {
       "id": "9",
+      "type": "list",
+      "raw_line": "- Blocked task (blocked)",
+      "title_text": "Blocked task",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": "blocked"
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [215, 239],
+      "subtree_span": [215, 239],
+      "line": 19,
+      "column": 1
+    },
+    {
+      "id": "10",
       "type": "heading",
       "level": 1,
       "raw_line": "# Misc",
@@ -243,23 +199,11 @@
       },
       "comments": [],
       "children": [],
-      "item_span": [
-        113,
-        119
-      ],
-      "subtree_span": [
-        113,
-        119
-      ],
-      "line": 18,
+      "item_span": [241, 247],
+      "subtree_span": [241, 247],
+      "line": 21,
       "column": 1
     }
   ],
-  "root_ids": [
-    "0",
-    "2",
-    "5",
-    "7",
-    "9"
-  ]
+  "root_ids": ["0", "2", "4", "6", "8", "10"]
 }

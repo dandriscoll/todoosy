@@ -9,15 +9,25 @@
       "metadata": {
         "due": null,
         "priority": 1,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [
         "These are the primary objectives for Q1 2026.",
         "Focus on customer retention."
       ],
-      "children": ["1", "2"],
-      "item_span": [0, 92],
-      "subtree_span": [0, 234],
+      "children": [
+        "1",
+        "2"
+      ],
+      "item_span": [
+        0,
+        92
+      ],
+      "subtree_span": [
+        0,
+        234
+      ],
       "line": 1,
       "column": 1
     },
@@ -29,15 +39,22 @@
       "metadata": {
         "due": null,
         "priority": 0,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [
         "The bug occurs when users have special characters.",
         "Affects approximately 5% of users."
       ],
       "children": [],
-      "item_span": [94, 198],
-      "subtree_span": [94, 198],
+      "item_span": [
+        94,
+        198
+      ],
+      "subtree_span": [
+        94,
+        198
+      ],
       "line": 6,
       "column": 1
     },
@@ -49,14 +66,21 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [
         "Need to add edge cases."
       ],
       "children": [],
-      "item_span": [199, 240],
-      "subtree_span": [199, 240],
+      "item_span": [
+        199,
+        240
+      ],
+      "subtree_span": [
+        199,
+        240
+      ],
       "line": 9,
       "column": 1
     },
@@ -69,15 +93,25 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [242, 248],
-      "subtree_span": [242, 248],
+      "item_span": [
+        242,
+        248
+      ],
+      "subtree_span": [
+        242,
+        248
+      ],
       "line": 12,
       "column": 1
     }
   ],
-  "root_ids": ["0", "3"]
+  "root_ids": [
+    "0",
+    "3"
+  ]
 }

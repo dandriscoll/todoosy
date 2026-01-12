@@ -63,6 +63,7 @@ describe('Todoosy Golden Tests', () => {
         expect(actual.metadata.due).toBe(expected.metadata.due);
         expect(actual.metadata.priority).toBe(expected.metadata.priority);
         expect(actual.metadata.estimate_minutes).toBe(expected.metadata.estimate_minutes);
+        expect(actual.metadata.progress).toBe(expected.metadata.progress);
         expect(actual.comments).toEqual(expected.comments);
         expect(actual.children.length).toBe(expected.children.length);
       }

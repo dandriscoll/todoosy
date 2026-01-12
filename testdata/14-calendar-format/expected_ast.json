@@ -9,12 +9,24 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
-      "children": ["1", "2", "3", "4"],
-      "item_span": [0, 7],
-      "subtree_span": [0, 152],
+      "children": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "item_span": [
+        0,
+        7
+      ],
+      "subtree_span": [
+        0,
+        152
+      ],
       "line": 1,
       "column": 1
     },
@@ -26,12 +38,19 @@
       "metadata": {
         "due": "2026-01-15",
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [9, 45],
-      "subtree_span": [9, 45],
+      "item_span": [
+        9,
+        45
+      ],
+      "subtree_span": [
+        9,
+        45
+      ],
       "line": 3,
       "column": 1
     },
@@ -43,12 +62,19 @@
       "metadata": {
         "due": "2026-02-20",
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [46, 85],
-      "subtree_span": [46, 85],
+      "item_span": [
+        46,
+        85
+      ],
+      "subtree_span": [
+        46,
+        85
+      ],
       "line": 4,
       "column": 1
     },
@@ -60,12 +86,19 @@
       "metadata": {
         "due": "2027-03-10",
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [86, 127],
-      "subtree_span": [86, 127],
+      "item_span": [
+        86,
+        127
+      ],
+      "subtree_span": [
+        86,
+        127
+      ],
       "line": 5,
       "column": 1
     },
@@ -77,12 +110,19 @@
       "metadata": {
         "due": "2026-05-01",
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [128, 155],
-      "subtree_span": [128, 155],
+      "item_span": [
+        128,
+        155
+      ],
+      "subtree_span": [
+        128,
+        155
+      ],
       "line": 6,
       "column": 1
     },
@@ -95,15 +135,25 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [157, 163],
-      "subtree_span": [157, 163],
+      "item_span": [
+        157,
+        163
+      ],
+      "subtree_span": [
+        157,
+        163
+      ],
       "line": 8,
       "column": 1
     }
   ],
-  "root_ids": ["0", "5"]
+  "root_ids": [
+    "0",
+    "5"
+  ]
 }

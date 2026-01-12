@@ -9,12 +9,23 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
-      "children": ["1", "2", "3"],
-      "item_span": [0, 6],
-      "subtree_span": [0, 119],
+      "children": [
+        "1",
+        "2",
+        "3"
+      ],
+      "item_span": [
+        0,
+        6
+      ],
+      "subtree_span": [
+        0,
+        119
+      ],
       "line": 1,
       "column": 1
     },
@@ -26,12 +37,19 @@
       "metadata": {
         "due": "2026-01-10",
         "priority": 0,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [8, 44],
-      "subtree_span": [8, 44],
+      "item_span": [
+        8,
+        44
+      ],
+      "subtree_span": [
+        8,
+        44
+      ],
       "line": 3,
       "column": 1
     },
@@ -43,12 +61,19 @@
       "metadata": {
         "due": "2026-01-10",
         "priority": 1,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [45, 81],
-      "subtree_span": [45, 81],
+      "item_span": [
+        45,
+        81
+      ],
+      "subtree_span": [
+        45,
+        81
+      ],
       "line": 4,
       "column": 1
     },
@@ -60,12 +85,19 @@
       "metadata": {
         "due": "2026-01-10",
         "priority": 2,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [82, 116],
-      "subtree_span": [82, 116],
+      "item_span": [
+        82,
+        116
+      ],
+      "subtree_span": [
+        82,
+        116
+      ],
       "line": 5,
       "column": 1
     },
@@ -78,15 +110,25 @@
       "metadata": {
         "due": null,
         "priority": null,
-        "estimate_minutes": null
+        "estimate_minutes": null,
+        "progress": null
       },
       "comments": [],
       "children": [],
-      "item_span": [118, 124],
-      "subtree_span": [118, 124],
+      "item_span": [
+        118,
+        124
+      ],
+      "subtree_span": [
+        118,
+        124
+      ],
       "line": 7,
       "column": 1
     }
   ],
-  "root_ids": ["0", "4"]
+  "root_ids": [
+    "0",
+    "4"
+  ]
 }
