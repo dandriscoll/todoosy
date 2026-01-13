@@ -337,6 +337,38 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                 skip_indices.add(i + 1)
                 continue
 
+        # Try standalone date formats (single part: ISO dates)
+        date_result, valid = parse_date(part)
+        if valid and date_result:
+            tokens.append(ParsedToken(
+                type='due',
+                value=date_result,
+                raw=part,
+                start=absolute_start,
+                end=absolute_end,
+            ))
+            continue
+
+        # Try standalone text date formats (multiple parts: Month Day [Year] or Day Month [Year])
+        remaining_parts = [part] + parts[i + 1:]
+        text_date_result, text_valid, parts_consumed = parse_text_date(remaining_parts)
+        if text_valid and text_date_result:
+            raw_parts = [part]
+            end_pos = part_start + len(part)
+            for j in range(1, parts_consumed):
+                raw_parts.append(parts[i + j])
+                skip_indices.add(i + j)
+                end_pos = content.find(parts[i + j], end_pos) + len(parts[i + j])
+            final_absolute_end = group_start + 1 + end_pos
+            tokens.append(ParsedToken(
+                type='due',
+                value=text_date_result,
+                raw=' '.join(raw_parts),
+                start=absolute_start,
+                end=final_absolute_end,
+            ))
+            continue
+
     return ParenGroup(
         start=group_start,
         end=group_start + len(content) + 2,  # +2 for parens
