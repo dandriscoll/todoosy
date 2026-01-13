@@ -382,6 +382,43 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
         continue;
       }
     }
+
+    // Check for standalone dates (without "due" prefix)
+    // First try standard date formats (single part)
+    const standaloneDateResult = parseDate(part);
+    if (standaloneDateResult.valid) {
+      tokens.push({
+        type: 'due',
+        value: standaloneDateResult.date!,
+        raw: part,
+        start: absoluteStart,
+        end: absoluteEnd,
+      });
+      continue;
+    }
+
+    // Try text date formats starting with this part (Month Day [Year] or Day Month [Year])
+    const remainingPartsForDate = parts.slice(i);
+    const standaloneTextDateResult = parseTextDate(remainingPartsForDate);
+    if (standaloneTextDateResult.valid) {
+      // Calculate the end position
+      let rawParts: string[] = [];
+      let endPos = partStart;
+      for (let j = 0; j < standaloneTextDateResult.partsConsumed; j++) {
+        rawParts.push(remainingPartsForDate[j]);
+        if (j > 0) skipIndices.add(i + j);
+        endPos = content.indexOf(remainingPartsForDate[j], endPos) + remainingPartsForDate[j].length;
+      }
+      const finalAbsoluteEnd = groupStart + 1 + endPos;
+      tokens.push({
+        type: 'due',
+        value: standaloneTextDateResult.date!,
+        raw: rawParts.join(' '),
+        start: absoluteStart,
+        end: finalAbsoluteEnd,
+      });
+      continue;
+    }
   }
 
   return {

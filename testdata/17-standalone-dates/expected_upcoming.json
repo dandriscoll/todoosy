@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-01-13",
+      "priority": null,
+      "path": "Tasks > Pick up dry cleaning",
+      "item_span": [9, 40]
+    },
+    {
+      "id": "2",
+      "due": "2026-01-15",
+      "priority": null,
+      "path": "Tasks > Buy groceries",
+      "item_span": [41, 69]
+    },
+    {
+      "id": "4",
+      "due": "2026-01-20",
+      "priority": null,
+      "path": "Tasks > Meeting with team",
+      "item_span": [95, 127]
+    },
+    {
+      "id": "5",
+      "due": "2026-02-05",
+      "priority": 1,
+      "path": "Tasks > Both formats",
+      "item_span": [128, 154]
+    },
+    {
+      "id": "3",
+      "due": "2026-02-15",
+      "priority": null,
+      "path": "Tasks > Call mom",
+      "item_span": [70, 94]
+    }
+  ]
+}

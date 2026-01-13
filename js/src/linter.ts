@@ -180,14 +180,14 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       for (const pMatch of allParenMatches) {
         const pContent = pMatch[1];
         const pStart = item.item_span[0] + (pMatch.index || 0);
+        const matchedPositions = new Set<number>();
 
-        // Check text dates first (month-first, year can be 2 or 4 digits)
+        // Check text dates first (month-first, year can be 2 or 4 digits) with "due" prefix
         const textDueDatesInGroup = pContent.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
-        const textDuePositions = new Set<number>();
         for (const tdm of textDueDatesInGroup) {
           const ds = tdm[1];
           if (isValidDate(ds)) {
-            textDuePositions.add(tdm.index || 0);
+            matchedPositions.add(tdm.index || 0);
             const dStart = pStart + 1 + (tdm.index || 0);
             allDueDates.push({
               dateStr: ds,
@@ -196,12 +196,12 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
           }
         }
 
-        // Check day-first text dates (year can be 2 or 4 digits)
+        // Check day-first text dates (year can be 2 or 4 digits) with "due" prefix
         const textDueDayFirstInGroup = pContent.matchAll(/\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
         for (const tdm of textDueDayFirstInGroup) {
           const ds = tdm[1];
           if (isValidDate(ds)) {
-            textDuePositions.add(tdm.index || 0);
+            matchedPositions.add(tdm.index || 0);
             const dStart = pStart + 1 + (tdm.index || 0);
             allDueDates.push({
               dateStr: ds,
@@ -210,21 +210,71 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
           }
         }
 
-        // Check standard dates
+        // Check standard dates with "due" prefix
         const dueDatesInGroup = pContent.matchAll(/\bdue\s+([^\s,)]+)/gi);
         for (const dm of dueDatesInGroup) {
           // Skip if already matched as text date
-          if (textDuePositions.has(dm.index || 0)) continue;
+          if (matchedPositions.has(dm.index || 0)) continue;
           const ds = dm[1];
           // Skip if it's a month name (part of text date)
           if (MONTH_NAMES.has(ds.toLowerCase())) continue;
           // Skip if it's a day number (part of day-first text date)
           if (/^\d{1,2}$/.test(ds)) continue;
           if (isValidDate(ds)) {
+            matchedPositions.add(dm.index || 0);
             const dStart = pStart + 1 + (dm.index || 0);
             allDueDates.push({
               dateStr: ds,
               span: [dStart, dStart + dm[0].length],
+            });
+          }
+        }
+
+        // Check standalone text dates (without "due" prefix, not preceded by digit+space which indicates day-first)
+        const standaloneTextDatesInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\d\s)((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+        for (const stm of standaloneTextDatesInGroup) {
+          // Skip if already matched
+          if (matchedPositions.has(stm.index || 0)) continue;
+          const ds = stm[1];
+          if (isValidDate(ds)) {
+            matchedPositions.add(stm.index || 0);
+            const dStart = pStart + 1 + (stm.index || 0);
+            allDueDates.push({
+              dateStr: ds,
+              span: [dStart, dStart + stm[0].length],
+            });
+          }
+        }
+
+        // Check standalone day-first text dates (without "due" prefix, not preceded by digit)
+        const standaloneDayFirstInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\d)(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+        for (const stm of standaloneDayFirstInGroup) {
+          // Skip if already matched
+          if (matchedPositions.has(stm.index || 0)) continue;
+          const ds = stm[1];
+          if (isValidDate(ds)) {
+            matchedPositions.add(stm.index || 0);
+            const dStart = pStart + 1 + (stm.index || 0);
+            allDueDates.push({
+              dateStr: ds,
+              span: [dStart, dStart + stm[0].length],
+            });
+          }
+        }
+
+        // Check standalone ISO/slash dates (without "due" prefix)
+        // Use word boundary to avoid matching partial dates
+        const standaloneNumericDates = pContent.matchAll(/(?<!\bdue\s)(?<!\d)(\d{2,4}[-\/]\d{1,2}[-\/]\d{1,4})(?!\d)/gi);
+        for (const snm of standaloneNumericDates) {
+          // Skip if already matched
+          if (matchedPositions.has(snm.index || 0)) continue;
+          const ds = snm[1];
+          if (isValidDate(ds)) {
+            matchedPositions.add(snm.index || 0);
+            const dStart = pStart + 1 + (snm.index || 0);
+            allDueDates.push({
+              dateStr: ds,
+              span: [dStart, dStart + snm[0].length],
             });
           }
         }
@@ -241,6 +291,39 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
           });
         }
         break; // Only warn once per item
+      }
+
+      // Check for standalone dates (without "due" prefix)
+      // Standalone text dates: Month Day [Year] (not preceded by "due" or digit+space)
+      const standaloneTextDates = content.matchAll(/(?<!\bdue\s)(?<!\d\s)((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+      for (const stdMatch of standaloneTextDates) {
+        const dateStr = stdMatch[1];
+        if (!isValidDate(dateStr)) {
+          const tokenStart = parenStart + 1 + (stdMatch.index || 0);
+          warnings.push({
+            code: 'INVALID_DATE_FORMAT',
+            message: `Invalid date format: ${dateStr}`,
+            line: item.line,
+            column: tokenStart - item.item_span[0] + 1,
+            span: [tokenStart, tokenStart + dateStr.length],
+          });
+        }
+      }
+
+      // Standalone day-first text dates: Day Month [Year] (not preceded by "due" or a digit)
+      const standaloneDayFirstDates = content.matchAll(/(?<!\bdue\s)(?<!\d)(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+      for (const stdMatch of standaloneDayFirstDates) {
+        const dateStr = stdMatch[1];
+        if (!isValidDate(dateStr)) {
+          const tokenStart = parenStart + 1 + (stdMatch.index || 0);
+          warnings.push({
+            code: 'INVALID_DATE_FORMAT',
+            message: `Invalid date format: ${dateStr}`,
+            line: item.line,
+            column: tokenStart - item.item_span[0] + 1,
+            span: [tokenStart, tokenStart + dateStr.length],
+          });
+        }
       }
 
       // Check for invalid priority tokens (e.g., pX)

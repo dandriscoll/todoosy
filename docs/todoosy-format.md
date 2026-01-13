@@ -98,18 +98,24 @@ Rules:
 
 ##### Due Date
 
-Format: `due <date>`
+Format: `due <date>` or `<date>` (standalone)
+
+Due dates can be specified with or without the `due` keyword. Standalone dates (without `due`) are recognized when they appear as a token in parentheses.
 
 Accepted date formats:
 | Format | Example | Notes |
 |--------|---------|-------|
-| `YYYY-MM-DD` | `due 2026-01-10` | ISO 8601 (preferred) |
-| `MM/DD/YYYY` | `due 01/10/2026` | US format, 4-digit year |
-| `MM/DD/YY` | `due 01/10/26` | US format, 2-digit year |
-| `Month D` | `due January 7` | Full month name, no year |
-| `Mon D` | `due Jan 7` | 3-letter month abbreviation, no year |
+| `YYYY-MM-DD` | `due 2026-01-10` or `2026-01-10` | ISO 8601 (preferred) |
+| `MM/DD/YYYY` | `due 01/10/2026` or `01/10/2026` | US format, 4-digit year |
+| `MM/DD/YY` | `due 01/10/26` or `01/10/26` | US format, 2-digit year |
+| `Month D` | `due January 7` or `January 7` | Full month name, no year |
+| `Mon D` | `due Jan 7` or `Jan 7` | 3-letter month abbreviation, no year |
+| `D Month` | `due 7 January` or `7 January` | Day-first with full month name |
+| `D Mon` | `due 7 Jan` or `7 Jan` | Day-first with 3-letter abbreviation |
 | `Month D YYYY` | `due January 7 2028` | Full month name with year |
 | `Mon D YYYY` | `due Jan 7 2028` | 3-letter month abbreviation with year |
+| `D Month YYYY` | `due 7 January 2028` | Day-first with full month and year |
+| `D Mon YYYY` | `due 7 Jan 2028` | Day-first with abbreviation and year |
 
 Month names and abbreviations are case-insensitive.
 
@@ -460,6 +466,10 @@ Focus on customer retention and new feature development.
 - Dentist appointment (due 03/20/2026)
 - Renew license (due 06/15/26)
 - Submit report (due 01/10/26, p1, 2h)
+- Pick up dry cleaning (Jan 13)
+- Call mom (15 February)
+- Buy groceries (2026-01-15)
+- Team meeting (Feb 5, p1)
 ```
 
 **Interpretation:**
@@ -469,8 +479,12 @@ Focus on customer retention and new feature development.
 | Dentist appointment | 2026-03-20 | - | - |
 | Renew license | 2026-06-15 | - | - |
 | Submit report | 2026-01-10 | 1 | 120 min |
+| Pick up dry cleaning | 2026-01-13 | - | - |
+| Call mom | 2026-02-15 | - | - |
+| Buy groceries | 2026-01-15 | - | - |
+| Team meeting | 2026-02-05 | 1 | - |
 
-All dates normalized to ISO 8601 internally.
+All dates normalized to ISO 8601 internally. Dates can be specified with or without the `due` keyword. Day-first formats (`15 February`) are also supported.
 
 ### Example 9: Complete Document with Scheme
 

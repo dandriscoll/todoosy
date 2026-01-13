@@ -1,0 +1,133 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": ["1", "2", "3", "4", "5"],
+      "item_span": [0, 7],
+      "subtree_span": [0, 152],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Pick up dry cleaning (Jan 13)",
+      "title_text": "Pick up dry cleaning",
+      "metadata": {
+        "due": "2026-01-13",
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [9, 40],
+      "subtree_span": [9, 40],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Buy groceries (2026-01-15)",
+      "title_text": "Buy groceries",
+      "metadata": {
+        "due": "2026-01-15",
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [41, 69],
+      "subtree_span": [41, 69],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Call mom (15 February)",
+      "title_text": "Call mom",
+      "metadata": {
+        "due": "2026-02-15",
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [70, 94],
+      "subtree_span": [70, 94],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Meeting with team (due Jan 20)",
+      "title_text": "Meeting with team",
+      "metadata": {
+        "due": "2026-01-20",
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [95, 127],
+      "subtree_span": [95, 127],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Both formats (Feb 5, p1)",
+      "title_text": "Both formats",
+      "metadata": {
+        "due": "2026-02-05",
+        "priority": 1,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [128, 154],
+      "subtree_span": [128, 154],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [156, 162],
+      "subtree_span": [156, 162],
+      "line": 9,
+      "column": 1
+    }
+  ],
+  "root_ids": ["0", "6"]
+}
