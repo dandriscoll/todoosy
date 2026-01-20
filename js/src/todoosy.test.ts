@@ -267,6 +267,30 @@ describe('Formatter Edge Cases', () => {
     const formatted = format(input);
     expect(formatted).toContain('(due ~2026-01-25)');
   });
+
+  test('roomy style adds blank lines around all headings', () => {
+    const input = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n';
+    const scheme = { timezone: null, priorities: {}, misc: 'todoosy.md/Misc', calendar_format: 'yyyy-mm-dd', formatting_style: 'roomy' };
+    const formatted = format(input, scheme);
+    // Should have blank line after ## Sub
+    expect(formatted).toContain('## Sub\n\n- Task');
+  });
+
+  test('balanced style adds blank lines only around top-level headings', () => {
+    const input = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n';
+    const scheme = { timezone: null, priorities: {}, misc: 'todoosy.md/Misc', calendar_format: 'yyyy-mm-dd', formatting_style: 'balanced' };
+    const formatted = format(input, scheme);
+    // Should NOT have blank line after ## Sub
+    expect(formatted).toContain('## Sub\n- Task');
+  });
+
+  test('tight style removes all blank lines around headings', () => {
+    const input = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n';
+    const scheme = { timezone: null, priorities: {}, misc: 'todoosy.md/Misc', calendar_format: 'yyyy-mm-dd', formatting_style: 'tight' };
+    const formatted = format(input, scheme);
+    // Should NOT have blank lines around headings
+    expect(formatted).toContain('# Work\n## Sub\n- Task');
+  });
 });
 
 describe('Linter Edge Cases', () => {
@@ -305,5 +329,19 @@ P2 - Medium
     expect(scheme.priorities['0']).toBe('Critical');
     expect(scheme.priorities['1']).toBe('High');
     expect(scheme.priorities['2']).toBe('Medium');
+  });
+
+  test('parses formatting_style', () => {
+    const scheme = parseScheme(`
+# Formatting Style
+
+balanced
+`);
+    expect(scheme.formatting_style).toBe('balanced');
+  });
+
+  test('defaults formatting_style to roomy', () => {
+    const scheme = parseScheme('');
+    expect(scheme.formatting_style).toBe('roomy');
   });
 });

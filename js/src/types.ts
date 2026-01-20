@@ -70,6 +70,7 @@ export interface Scheme {
   priorities: Record<string, string>;
   misc: string; // format: "filename/headingname", default: "todoosy.md/Misc"
   calendar_format: string; // Valid: yyyy-mm-dd, yyyy/mm/dd, mm/dd/yyyy, dd/mm/yyyy
+  formatting_style: string; // Valid: roomy, balanced, tight
 }
 
 export interface ParsedToken {

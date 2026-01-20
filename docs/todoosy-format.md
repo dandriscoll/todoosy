@@ -333,7 +333,30 @@ Rules:
 - Text date formats (e.g., `Jan 10`, `January 10`, `10 Jan`, `10 January`) are always accepted as input regardless of this setting
 - Parsers MUST accept all input formats; this setting only affects output
 
-#### 7.6 Misc Section
+#### 7.6 Formatting Style Section
+
+A heading `# Formatting Style` followed by a single line specifying the whitespace style for formatted output.
+
+```markdown
+# Formatting Style
+
+balanced
+```
+
+Valid style values:
+| Value | Description |
+|-------|-------------|
+| `roomy` | Blank lines before and after all headings (default) |
+| `balanced` | Blank lines before and after top-level (level 1) headings only |
+| `tight` | No blank lines around headings |
+
+Rules:
+- The style affects how the formatter outputs whitespace around headings
+- Style names are case-insensitive
+- If omitted, defaults to `roomy`
+- The linter MUST warn if an invalid style value is specified
+
+#### 7.7 Misc Section
 
 A heading `# Misc` followed by a single line specifying the location of the misc section.
 

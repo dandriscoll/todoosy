@@ -86,6 +86,9 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
   // If no filename provided, assume it could be the misc file (backward compatibility)
   const isMiscFile = filename === undefined || filename === miscLocation.filename;
 
+  // Determine formatting style: roomy (default), balanced, or tight
+  const formattingStyle = scheme?.formatting_style ?? 'roomy';
+
   // Track Misc section
   let miscSectionId: string | null = null;
 
@@ -97,6 +100,22 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
     }
   }
 
+  // Helper to determine if we should add blank line before a heading
+  function shouldAddBlankBefore(item: ItemNode): boolean {
+    if (item.type !== 'heading') return false;
+    if (formattingStyle === 'tight') return false;
+    if (formattingStyle === 'balanced') return item.level === 1;
+    return true; // roomy
+  }
+
+  // Helper to determine if we should add blank line after a heading
+  function shouldAddBlankAfter(item: ItemNode): boolean {
+    if (item.type !== 'heading') return false;
+    if (formattingStyle === 'tight') return false;
+    if (formattingStyle === 'balanced') return item.level === 1;
+    return true; // roomy
+  }
+
   // Helper to format an item and its subtree
   function formatItem(id: string, listIndent: number = 0, isUnderMisc: boolean = false): void {
     const item = itemMap.get(id)!;
@@ -106,8 +125,8 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
       return;
     }
 
-    // Add blank line before headings (except at start)
-    if (item.type === 'heading' && lines.length > 0) {
+    // Add blank line before headings (except at start), based on style
+    if (shouldAddBlankBefore(item) && lines.length > 0) {
       if (lines[lines.length - 1] !== '') {
         lines.push('');
       }
@@ -115,8 +134,8 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
 
     lines.push(formatItemLine(item, listIndent));
 
-    // Add blank line after heading before comments or children
-    if (item.type === 'heading') {
+    // Add blank line after heading before comments or children, based on style
+    if (shouldAddBlankAfter(item)) {
       lines.push('');
     }
 
@@ -130,7 +149,9 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
 
     // Add blank line after heading comments before children
     if (item.type === 'heading' && item.comments.length > 0 && item.children.length > 0) {
-      lines.push('');
+      if (shouldAddBlankAfter(item)) {
+        lines.push('');
+      }
     }
 
     // Format children
@@ -156,21 +177,31 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
 
   // Add Misc section at the end (only for the misc file)
   if (isMiscFile) {
-    if (lines.length > 0 && lines[lines.length - 1] !== '') {
+    // Add blank line before Misc heading based on style
+    const miscItem = miscSectionId ? itemMap.get(miscSectionId) : null;
+    const shouldAddBlankBeforeMisc = formattingStyle !== 'tight' && (formattingStyle === 'roomy' || formattingStyle === 'balanced');
+    if (lines.length > 0 && lines[lines.length - 1] !== '' && shouldAddBlankBeforeMisc) {
       lines.push('');
     }
     lines.push(`# ${miscLocation.heading}`);
 
+    // Add blank line after Misc heading based on style
+    const shouldAddBlankAfterMisc = formattingStyle !== 'tight' && (formattingStyle === 'roomy' || formattingStyle === 'balanced');
+
     // Add Misc items if they exist
     if (miscSectionId) {
-      const miscItem = itemMap.get(miscSectionId)!;
-      if (miscItem.comments.length > 0) {
-        lines.push('');
-        lines.push(...miscItem.comments);
+      const miscItemNode = itemMap.get(miscSectionId)!;
+      if (miscItemNode.comments.length > 0) {
+        if (shouldAddBlankAfterMisc) {
+          lines.push('');
+        }
+        lines.push(...miscItemNode.comments);
       }
-      if (miscItem.children.length > 0) {
-        lines.push('');
-        for (const childId of miscItem.children) {
+      if (miscItemNode.children.length > 0) {
+        if (shouldAddBlankAfterMisc) {
+          lines.push('');
+        }
+        for (const childId of miscItemNode.children) {
           // Format misc children - they start at indent 0
           const child = itemMap.get(childId)!;
           lines.push(formatItemLine(child, 0));

@@ -69,6 +69,7 @@ class Scheme:
     priorities: dict[str, str] = field(default_factory=dict)
     misc: str = "todoosy.md/Misc"  # format: "filename/headingname"
     calendar_format: str = "yyyy-mm-dd"  # Valid: yyyy-mm-dd, yyyy/mm/dd, mm/dd/yyyy, dd/mm/yyyy
+    formatting_style: str = "roomy"  # Valid: roomy, balanced, tight
 
 
 @dataclass

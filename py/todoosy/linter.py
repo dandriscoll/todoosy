@@ -44,6 +44,7 @@ TEXT_DATE_DAY_FIRST_REGEX = re.compile(
 )
 
 VALID_CALENDAR_FORMATS = {'yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy'}
+VALID_FORMATTING_STYLES = {'roomy', 'balanced', 'tight'}
 
 
 @dataclass
@@ -322,6 +323,16 @@ def lint_scheme(scheme: Scheme) -> LintResult:
         warnings.append(Warning(
             code='INVALID_CALENDAR_FORMAT',
             message=f"Invalid calendar format: '{scheme.calendar_format}'. Valid formats are: {', '.join(sorted(VALID_CALENDAR_FORMATS))}",
+            line=None,
+            column=None,
+            span=None,
+        ))
+
+    # Check if formatting_style is valid
+    if scheme.formatting_style.lower() not in VALID_FORMATTING_STYLES:
+        warnings.append(Warning(
+            code='INVALID_FORMATTING_STYLE',
+            message=f"Invalid formatting style: '{scheme.formatting_style}'. Valid styles are: {', '.join(sorted(VALID_FORMATTING_STYLES))}",
             line=None,
             column=None,
             span=None,

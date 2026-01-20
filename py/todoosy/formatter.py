@@ -78,12 +78,35 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
     # If no filename provided, assume it could be the misc file (backward compatibility)
     is_misc_file = filename is None or filename == misc_filename
 
+    # Determine formatting style: roomy (default), balanced, or tight
+    formatting_style = scheme.formatting_style if scheme else 'roomy'
+
     # Track Misc section
     misc_section_id = None
     for item in ast.items:
         if item.type == 'heading' and item.title_text == misc_heading and item.level == 1:
             misc_section_id = item.id
             break
+
+    def should_add_blank_before(item: ItemNode) -> bool:
+        """Determine if we should add blank line before a heading."""
+        if item.type != 'heading':
+            return False
+        if formatting_style == 'tight':
+            return False
+        if formatting_style == 'balanced':
+            return item.level == 1
+        return True  # roomy
+
+    def should_add_blank_after(item: ItemNode) -> bool:
+        """Determine if we should add blank line after a heading."""
+        if item.type != 'heading':
+            return False
+        if formatting_style == 'tight':
+            return False
+        if formatting_style == 'balanced':
+            return item.level == 1
+        return True  # roomy
 
     def format_item(item_id: str, list_indent: int = 0, is_under_misc: bool = False) -> None:
         item = item_map[item_id]
@@ -92,14 +115,14 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
         if item.id == misc_section_id and not is_under_misc:
             return
 
-        # Add blank line before headings (except at start)
-        if item.type == 'heading' and lines and lines[-1] != '':
+        # Add blank line before headings (except at start), based on style
+        if should_add_blank_before(item) and lines and lines[-1] != '':
             lines.append('')
 
         lines.append(format_item_line(item, list_indent))
 
-        # Add blank line after heading before comments or children
-        if item.type == 'heading':
+        # Add blank line after heading before comments or children, based on style
+        if should_add_blank_after(item):
             lines.append('')
 
         # Add comments
@@ -112,7 +135,8 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
 
         # Add blank line after heading comments before children
         if item.type == 'heading' and item.comments and item.children:
-            lines.append('')
+            if should_add_blank_after(item):
+                lines.append('')
 
         # Format children
         for child_id in item.children:
@@ -130,18 +154,25 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
 
     # Add Misc section at the end (only for the misc file)
     if is_misc_file:
-        if lines and lines[-1] != '':
+        # Add blank line before Misc heading based on style
+        should_add_blank_before_misc = formatting_style != 'tight'
+        if lines and lines[-1] != '' and should_add_blank_before_misc:
             lines.append('')
         lines.append(f'# {misc_heading}')
+
+        # Add blank line after Misc heading based on style
+        should_add_blank_after_misc = formatting_style != 'tight'
 
         # Add Misc items if they exist
         if misc_section_id:
             misc_item = item_map[misc_section_id]
             if misc_item.comments:
-                lines.append('')
+                if should_add_blank_after_misc:
+                    lines.append('')
                 lines.extend(misc_item.comments)
             if misc_item.children:
-                lines.append('')
+                if should_add_blank_after_misc:
+                    lines.append('')
                 for child_id in misc_item.children:
                     child = item_map[child_id]
                     lines.append(format_item_line(child, 0))

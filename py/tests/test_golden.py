@@ -281,3 +281,86 @@ dd/mm/yyyy
     def test_day_first_text_date_with_year(self):
         result = parse('- Task (due 20 Feb 2027)')
         assert result.ast.items[0].metadata.due == '2027-02-20'
+
+    def test_soft_date_with_tilde_prefix(self):
+        result = parse('- Task (due ~2026-01-25)')
+        assert result.ast.items[0].metadata.due == '2026-01-25'
+        assert result.ast.items[0].metadata.due_soft is True
+
+    def test_soft_text_date_with_tilde_prefix(self):
+        result = parse('- Task (due ~Jan 30)')
+        assert result.ast.items[0].metadata.due == '2026-01-30'
+        assert result.ast.items[0].metadata.due_soft is True
+
+    def test_standalone_soft_date_with_tilde_prefix(self):
+        result = parse('- Task (~2026-02-10)')
+        assert result.ast.items[0].metadata.due == '2026-02-10'
+        assert result.ast.items[0].metadata.due_soft is True
+
+    def test_standalone_soft_text_date_with_tilde_prefix(self):
+        result = parse('- Task (~Feb 15)')
+        assert result.ast.items[0].metadata.due == '2026-02-15'
+        assert result.ast.items[0].metadata.due_soft is True
+
+    def test_non_soft_dates_have_null_due_soft(self):
+        result = parse('- Task (due 2026-01-20)')
+        assert result.ast.items[0].metadata.due == '2026-01-20'
+        assert result.ast.items[0].metadata.due_soft is None
+
+    def test_formatter_preserves_soft_date_tilde_prefix(self):
+        input_text = '# Work\n\n- Task (due ~2026-01-25)\n\n# Misc\n'
+        formatted = format(input_text)
+        assert '(due ~2026-01-25)' in formatted
+
+    def test_scheme_formatting_style(self):
+        scheme = parse_scheme('''
+# Formatting Style
+
+balanced
+''')
+        assert scheme.formatting_style == 'balanced'
+
+    def test_scheme_formatting_style_default(self):
+        scheme = parse_scheme('')
+        assert scheme.formatting_style == 'roomy'
+
+    def test_lint_scheme_invalid_formatting_style(self):
+        scheme = parse_scheme('''
+# Formatting Style
+
+invalid-style
+''')
+        result = lint_scheme(scheme)
+        assert any(w.code == 'INVALID_FORMATTING_STYLE' for w in result.warnings)
+
+    def test_lint_scheme_valid_formatting_style(self):
+        scheme = parse_scheme('''
+# Formatting Style
+
+tight
+''')
+        result = lint_scheme(scheme)
+        assert len(result.warnings) == 0
+
+    def test_roomy_style_adds_blank_lines_around_all_headings(self):
+        input_text = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n'
+        scheme = {'timezone': None, 'priorities': {}, 'misc': 'todoosy.md/Misc', 'calendar_format': 'yyyy-mm-dd', 'formatting_style': 'roomy'}
+        # Create a Scheme object
+        from todoosy.types import Scheme
+        scheme_obj = Scheme(**scheme)
+        formatted = format(input_text, scheme_obj)
+        assert '## Sub\n\n- Task' in formatted
+
+    def test_balanced_style_adds_blank_lines_only_around_top_level_headings(self):
+        input_text = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n'
+        from todoosy.types import Scheme
+        scheme_obj = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc', calendar_format='yyyy-mm-dd', formatting_style='balanced')
+        formatted = format(input_text, scheme_obj)
+        assert '## Sub\n- Task' in formatted
+
+    def test_tight_style_removes_all_blank_lines_around_headings(self):
+        input_text = '# Work\n\n## Sub\n\n- Task\n\n# Misc\n'
+        from todoosy.types import Scheme
+        scheme_obj = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc', calendar_format='yyyy-mm-dd', formatting_style='tight')
+        formatted = format(input_text, scheme_obj)
+        assert '# Work\n## Sub\n- Task' in formatted

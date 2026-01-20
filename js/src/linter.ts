@@ -34,6 +34,7 @@ const TEXT_DATE_REGEX = /^(january|jan|february|feb|march|mar|april|apr|may|june
 const TEXT_DATE_DAY_FIRST_REGEX = /^(\d{1,2})\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+(\d{2,4}))?$/i;
 
 const VALID_CALENDAR_FORMATS = new Set(['yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy']);
+const VALID_FORMATTING_STYLES = new Set(['roomy', 'balanced', 'tight']);
 
 const PRIORITY_REGEX = /\bp(\d+)\b/gi;
 const ESTIMATE_REGEX = /\b(\d+)([mhd])\b/gi;
@@ -449,6 +450,17 @@ export function lintScheme(scheme: Scheme): LintResult {
     warnings.push({
       code: 'INVALID_CALENDAR_FORMAT',
       message: `Invalid calendar format: '${scheme.calendar_format}'. Valid formats are: ${[...VALID_CALENDAR_FORMATS].sort().join(', ')}`,
+      line: null,
+      column: null,
+      span: null,
+    });
+  }
+
+  // Check if formatting_style is valid
+  if (!VALID_FORMATTING_STYLES.has(scheme.formatting_style.toLowerCase())) {
+    warnings.push({
+      code: 'INVALID_FORMATTING_STYLE',
+      message: `Invalid formatting style: '${scheme.formatting_style}'. Valid styles are: ${[...VALID_FORMATTING_STYLES].sort().join(', ')}`,
       line: null,
       column: null,
       span: null,
