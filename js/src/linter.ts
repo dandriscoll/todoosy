@@ -44,21 +44,24 @@ const INVALID_ESTIMATE_REGEX = /\b(\d+)([^mhd\s)0-9][^\s)]*)\b/gi;
 const PROGRESS_STATES = new Set(['done', 'deleted', 'in progress', 'blocked', 'progress']);
 
 function isValidDate(dateStr: string): boolean {
+  // Strip soft date prefix (~) for validation
+  const normalizedDateStr = dateStr.startsWith('~') ? dateStr.slice(1) : dateStr;
+
   // Check standard formats
-  if (VALID_DATE_FORMATS.some(regex => regex.test(dateStr))) {
+  if (VALID_DATE_FORMATS.some(regex => regex.test(normalizedDateStr))) {
     return true;
   }
   // Check text date format (Month Day [Year])
-  if (TEXT_DATE_REGEX.test(dateStr)) {
-    const match = dateStr.match(TEXT_DATE_REGEX);
+  if (TEXT_DATE_REGEX.test(normalizedDateStr)) {
+    const match = normalizedDateStr.match(TEXT_DATE_REGEX);
     if (match) {
       const day = parseInt(match[2], 10);
       return day >= 1 && day <= 31;
     }
   }
   // Check text date format (Day Month [Year])
-  if (TEXT_DATE_DAY_FIRST_REGEX.test(dateStr)) {
-    const match = dateStr.match(TEXT_DATE_DAY_FIRST_REGEX);
+  if (TEXT_DATE_DAY_FIRST_REGEX.test(normalizedDateStr)) {
+    const match = normalizedDateStr.match(TEXT_DATE_DAY_FIRST_REGEX);
     if (match) {
       const day = parseInt(match[1], 10);
       return day >= 1 && day <= 31;
@@ -115,8 +118,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       const parenStart = item.item_span[0] + (match.index || 0);
 
       // Check for due dates - try text date format first (captures more), then standard format
-      // Text date: due Month Day [Year] (Year can be 2 or 4 digits)
-      const textDueMatches = content.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+      // Text date: due [~]Month Day [Year] (Year can be 2 or 4 digits, ~ for soft dates)
+      const textDueMatches = content.matchAll(/\bdue\s+(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
       const textDueIndices = new Set<number>();
       for (const textDueMatch of textDueMatches) {
         textDueIndices.add(textDueMatch.index || 0);
@@ -133,8 +136,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
       }
 
-      // Day-first text date: due Day Month [Year] (Year can be 2 or 4 digits)
-      const textDueDayFirstMatches = content.matchAll(/\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+      // Day-first text date: due [~]Day Month [Year] (Year can be 2 or 4 digits, ~ for soft dates)
+      const textDueDayFirstMatches = content.matchAll(/\bdue\s+(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
       for (const textDueMatch of textDueDayFirstMatches) {
         textDueIndices.add(textDueMatch.index || 0);
         const dateStr = textDueMatch[1];
@@ -151,16 +154,18 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       }
 
       // Standard date formats (single token)
-      const dueMatches = content.matchAll(/\bdue\s+([^\s,)]+)/gi);
+      // Allow optional ~ prefix for soft dates
+      const dueMatches = content.matchAll(/\bdue\s+(~?[^\s,)]+)/gi);
       for (const dueMatch of dueMatches) {
         // Skip if this was already matched as a text date
         if (textDueIndices.has(dueMatch.index || 0)) continue;
 
         const dateStr = dueMatch[1];
-        // Skip if this looks like the start of a text date (month name)
-        if (MONTH_NAMES.has(dateStr.toLowerCase())) continue;
-        // Skip if this looks like a day number (could be start of day-first date)
-        if (/^\d{1,2}$/.test(dateStr)) continue;
+        // Skip if this looks like the start of a text date (month name, with or without ~)
+        const strippedDateStr = dateStr.startsWith('~') ? dateStr.slice(1) : dateStr;
+        if (MONTH_NAMES.has(strippedDateStr.toLowerCase())) continue;
+        // Skip if this looks like a day number (could be start of day-first date, with or without ~)
+        if (/^~?\d{1,2}$/.test(dateStr)) continue;
 
         if (!isValidDate(dateStr)) {
           const tokenStart = parenStart + 1 + (dueMatch.index || 0);
@@ -183,7 +188,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         const matchedPositions = new Set<number>();
 
         // Check text dates first (month-first, year can be 2 or 4 digits) with "due" prefix
-        const textDueDatesInGroup = pContent.matchAll(/\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+        // Allow optional ~ prefix for soft dates
+        const textDueDatesInGroup = pContent.matchAll(/\bdue\s+(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
         for (const tdm of textDueDatesInGroup) {
           const ds = tdm[1];
           if (isValidDate(ds)) {
@@ -197,7 +203,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
 
         // Check day-first text dates (year can be 2 or 4 digits) with "due" prefix
-        const textDueDayFirstInGroup = pContent.matchAll(/\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+        // Allow optional ~ prefix for soft dates
+        const textDueDayFirstInGroup = pContent.matchAll(/\bdue\s+(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
         for (const tdm of textDueDayFirstInGroup) {
           const ds = tdm[1];
           if (isValidDate(ds)) {
@@ -211,15 +218,17 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
 
         // Check standard dates with "due" prefix
-        const dueDatesInGroup = pContent.matchAll(/\bdue\s+([^\s,)]+)/gi);
+        // Allow optional ~ prefix for soft dates
+        const dueDatesInGroup = pContent.matchAll(/\bdue\s+(~?[^\s,)]+)/gi);
         for (const dm of dueDatesInGroup) {
           // Skip if already matched as text date
           if (matchedPositions.has(dm.index || 0)) continue;
           const ds = dm[1];
-          // Skip if it's a month name (part of text date)
-          if (MONTH_NAMES.has(ds.toLowerCase())) continue;
-          // Skip if it's a day number (part of day-first text date)
-          if (/^\d{1,2}$/.test(ds)) continue;
+          // Skip if it's a month name (part of text date, with or without ~)
+          const strippedDs = ds.startsWith('~') ? ds.slice(1) : ds;
+          if (MONTH_NAMES.has(strippedDs.toLowerCase())) continue;
+          // Skip if it's a day number (part of day-first text date, with or without ~)
+          if (/^~?\d{1,2}$/.test(ds)) continue;
           if (isValidDate(ds)) {
             matchedPositions.add(dm.index || 0);
             const dStart = pStart + 1 + (dm.index || 0);
@@ -231,7 +240,9 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
 
         // Check standalone text dates (without "due" prefix, not preceded by digit+space which indicates day-first)
-        const standaloneTextDatesInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\d\s)((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+        // Allow optional ~ prefix for soft dates
+        // Exclude if preceded by "due " or "due ~"
+        const standaloneTextDatesInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d\s)(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
         for (const stm of standaloneTextDatesInGroup) {
           // Skip if already matched
           if (matchedPositions.has(stm.index || 0)) continue;
@@ -247,7 +258,9 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
 
         // Check standalone day-first text dates (without "due" prefix, not preceded by digit)
-        const standaloneDayFirstInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\d)(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+        // Note: Day-first soft dates would be like ~15 Feb, but this is unusual; keep pattern simple
+        // Exclude if preceded by "due " or "due ~"
+        const standaloneDayFirstInGroup = pContent.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d)(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
         for (const stm of standaloneDayFirstInGroup) {
           // Skip if already matched
           if (matchedPositions.has(stm.index || 0)) continue;
@@ -264,7 +277,9 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
 
         // Check standalone ISO/slash dates (without "due" prefix)
         // Use word boundary to avoid matching partial dates
-        const standaloneNumericDates = pContent.matchAll(/(?<!\bdue\s)(?<!\d)(\d{2,4}[-\/]\d{1,2}[-\/]\d{1,4})(?!\d)/gi);
+        // Allow optional ~ prefix for soft dates
+        // Exclude if preceded by "due " or "due ~"
+        const standaloneNumericDates = pContent.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d)(~?\d{2,4}[-\/]\d{1,2}[-\/]\d{1,4})(?!\d)/gi);
         for (const snm of standaloneNumericDates) {
           // Skip if already matched
           if (matchedPositions.has(snm.index || 0)) continue;
@@ -295,7 +310,9 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
 
       // Check for standalone dates (without "due" prefix)
       // Standalone text dates: Month Day [Year] (not preceded by "due" or digit+space)
-      const standaloneTextDates = content.matchAll(/(?<!\bdue\s)(?<!\d\s)((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
+      // Allow optional ~ prefix for soft dates
+      // Exclude if preceded by "due " or "due ~"
+      const standaloneTextDates = content.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d\s)(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
       for (const stdMatch of standaloneTextDates) {
         const dateStr = stdMatch[1];
         if (!isValidDate(dateStr)) {
@@ -311,7 +328,9 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       }
 
       // Standalone day-first text dates: Day Month [Year] (not preceded by "due" or a digit)
-      const standaloneDayFirstDates = content.matchAll(/(?<!\bdue\s)(?<!\d)(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
+      // Allow optional ~ prefix for soft dates
+      // Exclude if preceded by "due " or "due ~"
+      const standaloneDayFirstDates = content.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d)(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
       for (const stdMatch of standaloneDayFirstDates) {
         const dateStr = stdMatch[1];
         if (!isValidDate(dateStr)) {

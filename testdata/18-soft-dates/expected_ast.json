@@ -1,0 +1,217 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks",
+      "title_text": "Tasks",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "item_span": [
+        0,
+        7
+      ],
+      "subtree_span": [
+        0,
+        199
+      ],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Hard deadline (due 2026-01-20)",
+      "title_text": "Hard deadline",
+      "metadata": {
+        "due": "2026-01-20",
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        9,
+        41
+      ],
+      "subtree_span": [
+        9,
+        41
+      ],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Soft deadline (due ~2026-01-25)",
+      "title_text": "Soft deadline",
+      "metadata": {
+        "due": "2026-01-25",
+        "due_soft": true,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        42,
+        75
+      ],
+      "subtree_span": [
+        42,
+        75
+      ],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Soft text date (due ~Jan 30)",
+      "title_text": "Soft text date",
+      "metadata": {
+        "due": "2026-01-30",
+        "due_soft": true,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        76,
+        106
+      ],
+      "subtree_span": [
+        76,
+        106
+      ],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Standalone soft ISO (~2026-02-10)",
+      "title_text": "Standalone soft ISO",
+      "metadata": {
+        "due": "2026-02-10",
+        "due_soft": true,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        107,
+        142
+      ],
+      "subtree_span": [
+        107,
+        142
+      ],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "raw_line": "- Standalone soft text (~Feb 15)",
+      "title_text": "Standalone soft text",
+      "metadata": {
+        "due": "2026-02-15",
+        "due_soft": true,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        143,
+        175
+      ],
+      "subtree_span": [
+        143,
+        175
+      ],
+      "line": 7,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "raw_line": "- Regular date (Jan 10)",
+      "title_text": "Regular date",
+      "metadata": {
+        "due": "2026-01-10",
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        176,
+        199
+      ],
+      "subtree_span": [
+        176,
+        199
+      ],
+      "line": 8,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        201,
+        207
+      ],
+      "subtree_span": [
+        201,
+        207
+      ],
+      "line": 10,
+      "column": 1
+    }
+  ],
+  "root_ids": [
+    "0",
+    "7"
+  ]
+}

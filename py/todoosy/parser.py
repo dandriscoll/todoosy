@@ -237,8 +237,15 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
         if part.lower() == 'due':
             remaining_parts = parts[i + 1:]
             if remaining_parts:
+                # Check for soft date prefix (~)
+                is_soft = False
+                date_parts_to_check = remaining_parts
+                if remaining_parts[0].startswith('~'):
+                    is_soft = True
+                    date_parts_to_check = [remaining_parts[0][1:]] + remaining_parts[1:]
+
                 # First try standard date formats (single part)
-                date_result, valid = parse_date(remaining_parts[0])
+                date_result, valid = parse_date(date_parts_to_check[0])
                 if valid and date_result:
                     next_part_start = content.find(remaining_parts[0], current_pos)
                     next_absolute_end = group_start + 1 + next_part_start + len(remaining_parts[0])
@@ -248,12 +255,13 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                         raw=f"due {remaining_parts[0]}",
                         start=absolute_start,
                         end=next_absolute_end,
+                        soft=is_soft if is_soft else None,
                     ))
                     skip_indices.add(i + 1)
                     continue
 
                 # Try text date formats (multiple parts: Month Day [Year])
-                text_date_result, text_valid, parts_consumed = parse_text_date(remaining_parts)
+                text_date_result, text_valid, parts_consumed = parse_text_date(date_parts_to_check)
                 if text_valid and text_date_result:
                     raw_parts = ['due']
                     end_pos = current_pos
@@ -268,6 +276,7 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                         raw=' '.join(raw_parts),
                         start=absolute_start,
                         end=final_absolute_end,
+                        soft=is_soft if is_soft else None,
                     ))
                     continue
             continue
@@ -337,8 +346,15 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                 skip_indices.add(i + 1)
                 continue
 
+        # Check for soft date prefix (~) on standalone dates
+        is_soft_standalone = False
+        part_to_check = part
+        if part.startswith('~'):
+            is_soft_standalone = True
+            part_to_check = part[1:]
+
         # Try standalone date formats (single part: ISO dates)
-        date_result, valid = parse_date(part)
+        date_result, valid = parse_date(part_to_check)
         if valid and date_result:
             tokens.append(ParsedToken(
                 type='due',
@@ -346,12 +362,15 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                 raw=part,
                 start=absolute_start,
                 end=absolute_end,
+                soft=is_soft_standalone if is_soft_standalone else None,
             ))
             continue
 
         # Try standalone text date formats (multiple parts: Month Day [Year] or Day Month [Year])
         remaining_parts = [part] + parts[i + 1:]
-        text_date_result, text_valid, parts_consumed = parse_text_date(remaining_parts)
+        # For text dates, use stripped version if soft
+        date_parts_for_text = [part_to_check] + parts[i + 1:] if is_soft_standalone else remaining_parts
+        text_date_result, text_valid, parts_consumed = parse_text_date(date_parts_for_text)
         if text_valid and text_date_result:
             raw_parts = [part]
             end_pos = part_start + len(part)
@@ -366,6 +385,7 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                 raw=' '.join(raw_parts),
                 start=absolute_start,
                 end=final_absolute_end,
+                soft=is_soft_standalone if is_soft_standalone else None,
             ))
             continue
 
@@ -433,6 +453,7 @@ def build_metadata(groups: list[ParenGroup]) -> ItemMetadata:
     for token in all_tokens:
         if token.type == 'due':
             metadata.due = str(token.value)
+            metadata.due_soft = token.soft
         elif token.type == 'priority':
             metadata.priority = int(token.value)
         elif token.type == 'estimate':

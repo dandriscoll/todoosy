@@ -61,16 +61,19 @@ def parse_misc_location(misc: str) -> tuple[str, str]:
 
 def is_valid_date(date_str: str) -> bool:
     """Check if a date string is in a valid format."""
+    # Strip soft date prefix (~) for validation
+    normalized_date_str = date_str[1:] if date_str.startswith('~') else date_str
+
     # Check standard formats
-    if any(regex.match(date_str) for regex in VALID_DATE_FORMATS):
+    if any(regex.match(normalized_date_str) for regex in VALID_DATE_FORMATS):
         return True
     # Check text date format (Month Day [Year])
-    match = TEXT_DATE_REGEX.match(date_str)
+    match = TEXT_DATE_REGEX.match(normalized_date_str)
     if match:
         day = int(match.group(2))
         return 1 <= day <= 31
     # Check text date format (Day Month [Year])
-    match = TEXT_DATE_DAY_FIRST_REGEX.match(date_str)
+    match = TEXT_DATE_DAY_FIRST_REGEX.match(normalized_date_str)
     if match:
         day = int(match.group(1))
         return 1 <= day <= 31
@@ -113,14 +116,14 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
             paren_start = item.item_span[0] + match.start()
 
             # Check for due dates - try text date format first (captures more), then standard format
-            # Text date: due Month Day [Year] (Year can be 2 or 4 digits)
+            # Text date: due [~]Month Day [Year] (Year can be 2 or 4 digits, ~ for soft dates)
             text_due_pattern = re.compile(
-                r'\bdue\s+((?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)',
+                r'\bdue\s+(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)',
                 re.IGNORECASE
             )
-            # Day-first text date: due Day Month [Year] (Year can be 2 or 4 digits)
+            # Day-first text date: due [~]Day Month [Year] (Year can be 2 or 4 digits, ~ for soft dates)
             text_due_day_first_pattern = re.compile(
-                r'\bdue\s+(\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)',
+                r'\bdue\s+(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)',
                 re.IGNORECASE
             )
             text_due_indices: set[int] = set()
@@ -150,18 +153,20 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                     ))
 
             # Standard date formats (single token)
-            due_pattern = re.compile(r'\bdue\s+([^\s,)]+)', re.IGNORECASE)
+            # Allow optional ~ prefix for soft dates
+            due_pattern = re.compile(r'\bdue\s+(~?[^\s,)]+)', re.IGNORECASE)
             for due_match in due_pattern.finditer(content):
                 # Skip if this was already matched as a text date
                 if due_match.start() in text_due_indices:
                     continue
 
                 date_str = due_match.group(1)
-                # Skip if this looks like the start of a text date (month name)
-                if date_str.lower() in MONTH_NAMES:
+                # Skip if this looks like the start of a text date (month name, with or without ~)
+                stripped_date_str = date_str[1:] if date_str.startswith('~') else date_str
+                if stripped_date_str.lower() in MONTH_NAMES:
                     continue
-                # Skip if this looks like a day number (could be start of day-first date)
-                if re.match(r'^\d{1,2}$', date_str):
+                # Skip if this looks like a day number (could be start of day-first date, with or without ~)
+                if re.match(r'^~?\d{1,2}$', date_str):
                     continue
 
                 if not is_valid_date(date_str):
@@ -203,11 +208,12 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                     if dm.start() in text_due_positions:
                         continue
                     ds = dm.group(1)
-                    # Skip if it's a month name (part of text date)
-                    if ds.lower() in MONTH_NAMES:
+                    # Skip if it's a month name (part of text date, with or without ~)
+                    stripped_ds = ds[1:] if ds.startswith('~') else ds
+                    if stripped_ds.lower() in MONTH_NAMES:
                         continue
-                    # Skip if it's a day number (part of day-first text date)
-                    if re.match(r'^\d{1,2}$', ds):
+                    # Skip if it's a day number (part of day-first text date, with or without ~)
+                    if re.match(r'^~?\d{1,2}$', ds):
                         continue
                     if is_valid_date(ds):
                         d_start = p_start + 1 + dm.start()

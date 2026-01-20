@@ -20,7 +20,8 @@ def format_metadata(metadata: ItemMetadata) -> str:
     parts: list[str] = []
 
     if metadata.due:
-        parts.append(f"due {metadata.due}")
+        soft_prefix = '~' if metadata.due_soft else ''
+        parts.append(f"due {soft_prefix}{metadata.due}")
 
     if metadata.progress:
         parts.append(metadata.progress)

@@ -20,7 +20,8 @@ function formatMetadata(metadata: ItemMetadata): string {
   const parts: string[] = [];
 
   if (metadata.due) {
-    parts.push(`due ${metadata.due}`);
+    const softPrefix = metadata.due_soft ? '~' : '';
+    parts.push(`due ${softPrefix}${metadata.due}`);
   }
 
   if (metadata.progress) {

@@ -9,6 +9,7 @@ from typing import Optional
 @dataclass
 class ItemMetadata:
     due: Optional[str] = None
+    due_soft: Optional[bool] = None
     priority: Optional[int] = None
     estimate_minutes: Optional[int] = None
     progress: Optional[str] = None
@@ -77,6 +78,7 @@ class ParsedToken:
     raw: str
     start: int
     end: int
+    soft: Optional[bool] = None  # Only for 'due' tokens - indicates a soft/flexible date
 
 
 @dataclass

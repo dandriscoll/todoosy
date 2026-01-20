@@ -1,0 +1,40 @@
+{
+  "items": [
+    {
+      "id": "6",
+      "due": "2026-01-10",
+      "priority": null,
+      "path": "Tasks > Regular date"
+    },
+    {
+      "id": "1",
+      "due": "2026-01-20",
+      "priority": null,
+      "path": "Tasks > Hard deadline"
+    },
+    {
+      "id": "2",
+      "due": "2026-01-25",
+      "priority": null,
+      "path": "Tasks > Soft deadline"
+    },
+    {
+      "id": "3",
+      "due": "2026-01-30",
+      "priority": null,
+      "path": "Tasks > Soft text date"
+    },
+    {
+      "id": "4",
+      "due": "2026-02-10",
+      "priority": null,
+      "path": "Tasks > Standalone soft ISO"
+    },
+    {
+      "id": "5",
+      "due": "2026-02-15",
+      "priority": null,
+      "path": "Tasks > Standalone soft text"
+    }
+  ]
+}

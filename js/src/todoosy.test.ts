@@ -218,6 +218,36 @@ describe('Parser Edge Cases', () => {
     const { ast } = parse('- Task (2d)');
     expect(ast.items[0].metadata.estimate_minutes).toBe(960);
   });
+
+  test('parses soft dates with tilde prefix', () => {
+    const { ast } = parse('- Task (due ~2026-01-25)');
+    expect(ast.items[0].metadata.due).toBe('2026-01-25');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('parses soft text dates with tilde prefix', () => {
+    const { ast } = parse('- Task (due ~Jan 30)');
+    expect(ast.items[0].metadata.due).toBe('2026-01-30');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('parses standalone soft dates with tilde prefix', () => {
+    const { ast } = parse('- Task (~2026-02-10)');
+    expect(ast.items[0].metadata.due).toBe('2026-02-10');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('parses standalone soft text dates with tilde prefix', () => {
+    const { ast } = parse('- Task (~Feb 15)');
+    expect(ast.items[0].metadata.due).toBe('2026-02-15');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('non-soft dates have null due_soft', () => {
+    const { ast } = parse('- Task (due 2026-01-20)');
+    expect(ast.items[0].metadata.due).toBe('2026-01-20');
+    expect(ast.items[0].metadata.due_soft).toBeNull();
+  });
 });
 
 describe('Formatter Edge Cases', () => {
@@ -230,6 +260,12 @@ describe('Formatter Edge Cases', () => {
     const input = '# Work\n\n- Call John (CEO)\n\n# Misc\n';
     const formatted = format(input);
     expect(formatted).toContain('(CEO)');
+  });
+
+  test('preserves soft date tilde prefix', () => {
+    const input = '# Work\n\n- Task (due ~2026-01-25)\n\n# Misc\n';
+    const formatted = format(input);
+    expect(formatted).toContain('(due ~2026-01-25)');
   });
 });
 

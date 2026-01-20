@@ -274,8 +274,17 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
       // Look for the next part(s) as the date
       const remainingParts = parts.slice(i + 1);
       if (remainingParts.length > 0) {
+        // Check for soft date prefix (~)
+        let isSoft = false;
+        let datePartsToCheck = remainingParts;
+        if (remainingParts[0].startsWith('~')) {
+          isSoft = true;
+          // Remove the tilde for parsing
+          datePartsToCheck = [remainingParts[0].slice(1), ...remainingParts.slice(1)];
+        }
+
         // First try standard date formats (single part)
-        const dateResult = parseDate(remainingParts[0]);
+        const dateResult = parseDate(datePartsToCheck[0]);
         if (dateResult.valid) {
           const nextPartStart = content.indexOf(remainingParts[0], currentPos);
           const nextAbsoluteEnd = groupStart + 1 + nextPartStart + remainingParts[0].length;
@@ -285,13 +294,14 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
             raw: `due ${remainingParts[0]}`,
             start: absoluteStart,
             end: nextAbsoluteEnd,
+            soft: isSoft || undefined,
           });
           skipIndices.add(i + 1);
           continue;
         }
 
         // Try text date formats (multiple parts: Month Day [Year])
-        const textDateResult = parseTextDate(remainingParts);
+        const textDateResult = parseTextDate(datePartsToCheck);
         if (textDateResult.valid) {
           // Calculate the end position
           let rawParts = [`due`];
@@ -308,6 +318,7 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
             raw: rawParts.join(' '),
             start: absoluteStart,
             end: finalAbsoluteEnd,
+            soft: isSoft || undefined,
           });
           continue;
         }
@@ -384,8 +395,16 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
     }
 
     // Check for standalone dates (without "due" prefix)
+    // Check for soft date prefix (~)
+    let isSoftStandalone = false;
+    let partToCheck = part;
+    if (part.startsWith('~')) {
+      isSoftStandalone = true;
+      partToCheck = part.slice(1);
+    }
+
     // First try standard date formats (single part)
-    const standaloneDateResult = parseDate(part);
+    const standaloneDateResult = parseDate(partToCheck);
     if (standaloneDateResult.valid) {
       tokens.push({
         type: 'due',
@@ -393,13 +412,19 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
         raw: part,
         start: absoluteStart,
         end: absoluteEnd,
+        soft: isSoftStandalone || undefined,
       });
       continue;
     }
 
     // Try text date formats starting with this part (Month Day [Year] or Day Month [Year])
     const remainingPartsForDate = parts.slice(i);
-    const standaloneTextDateResult = parseTextDate(remainingPartsForDate);
+    // For text dates, check if first part starts with ~
+    let datePartsForTextParsing = remainingPartsForDate;
+    if (isSoftStandalone) {
+      datePartsForTextParsing = [partToCheck, ...remainingPartsForDate.slice(1)];
+    }
+    const standaloneTextDateResult = parseTextDate(datePartsForTextParsing);
     if (standaloneTextDateResult.valid) {
       // Calculate the end position
       let rawParts: string[] = [];
@@ -416,6 +441,7 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
         raw: rawParts.join(' '),
         start: absoluteStart,
         end: finalAbsoluteEnd,
+        soft: isSoftStandalone || undefined,
       });
       continue;
     }
@@ -481,6 +507,7 @@ function buildTitleText(rawText: string, groups: ParenGroup[]): string {
 function buildMetadata(groups: ParenGroup[]): ItemMetadata {
   const metadata: ItemMetadata = {
     due: null,
+    due_soft: null,
     priority: null,
     estimate_minutes: null,
     progress: null,
@@ -494,6 +521,7 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
     switch (token.type) {
       case 'due':
         metadata.due = token.value as string;
+        metadata.due_soft = token.soft ?? null;
         break;
       case 'priority':
         metadata.priority = token.value as number;

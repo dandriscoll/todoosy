@@ -102,6 +102,21 @@ Format: `due <date>` or `<date>` (standalone)
 
 Due dates can be specified with or without the `due` keyword. Standalone dates (without `due`) are recognized when they appear as a token in parentheses.
 
+###### Soft Dates
+
+A soft date indicates a flexible or approximate target date rather than a hard deadline. Soft dates are specified by prefixing the date with a tilde (`~`).
+
+Format: `~<date>` or `due ~<date>`
+
+Examples:
+- `~Jan 20` - Soft date around January 20
+- `~2026-01-20` - Soft date around January 20, 2026
+- `due ~Feb 15` - Soft date around February 15
+
+Parsers MUST:
+- Store a `due_soft` boolean flag set to `true` for soft dates
+- Normalize the date value the same way as non-soft dates (removing the tilde)
+
 Accepted date formats:
 | Format | Example | Notes |
 |--------|---------|-------|

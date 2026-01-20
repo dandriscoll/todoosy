@@ -4,6 +4,7 @@
 
 export interface ItemMetadata {
   due: string | null;
+  due_soft: boolean | null;
   priority: number | null;
   estimate_minutes: number | null;
   progress: string | null;
@@ -77,6 +78,7 @@ export interface ParsedToken {
   raw: string;
   start: number;
   end: number;
+  soft?: boolean; // Only for 'due' tokens - indicates a soft/flexible date
 }
 
 export interface ParenGroup {
