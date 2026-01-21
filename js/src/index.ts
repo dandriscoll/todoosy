@@ -2,7 +2,7 @@
  * Todoosy - Markdown-based todo system
  */
 
-export { parse } from './parser.js';
+export { parse, parseTokensInParenGroup, extractParenGroups } from './parser.js';
 export type { ParseResult } from './parser.js';
 
 export { format } from './formatter.js';

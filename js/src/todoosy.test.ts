@@ -4,7 +4,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { parse, format, lint, queryUpcoming, queryMisc, parseScheme, parseSettings } from './index.js';
+import { parse, format, lint, queryUpcoming, queryMisc, parseScheme, parseSettings, parseTokensInParenGroup, extractParenGroups } from './index.js';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -407,5 +407,193 @@ value
 `);
     expect(settings.extended['Empty Setting']).toBeUndefined();
     expect(settings.extended['Non-empty Setting']).toBe('value');
+  });
+});
+
+describe('parseTokensInParenGroup', () => {
+  test('parses priority token', () => {
+    const result = parseTokensInParenGroup('p1', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('priority');
+    expect(result.tokens[0].value).toBe(1);
+    expect(result.hasRecognizedTokens).toBe(true);
+  });
+
+  test('parses due date with ISO format', () => {
+    const result = parseTokensInParenGroup('due 2026-01-20', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toBe('2026-01-20');
+  });
+
+  test('parses soft due date with tilde', () => {
+    const result = parseTokensInParenGroup('due ~2026-01-25', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toBe('2026-01-25');
+    expect(result.tokens[0].soft).toBe(true);
+  });
+
+  test('parses estimate in minutes', () => {
+    const result = parseTokensInParenGroup('30m', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('estimate');
+    expect(result.tokens[0].value).toBe(30);
+  });
+
+  test('parses estimate in hours', () => {
+    const result = parseTokensInParenGroup('2h', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('estimate');
+    expect(result.tokens[0].value).toBe(120);
+  });
+
+  test('parses estimate in days', () => {
+    const result = parseTokensInParenGroup('1d', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('estimate');
+    expect(result.tokens[0].value).toBe(480);
+  });
+
+  test('parses progress state done', () => {
+    const result = parseTokensInParenGroup('done', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('progress');
+    expect(result.tokens[0].value).toBe('done');
+  });
+
+  test('parses progress state in progress', () => {
+    const result = parseTokensInParenGroup('in progress', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('progress');
+    expect(result.tokens[0].value).toBe('in progress');
+  });
+
+  test('parses progress state blocked', () => {
+    const result = parseTokensInParenGroup('blocked', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('progress');
+    expect(result.tokens[0].value).toBe('blocked');
+  });
+
+  test('parses multiple tokens', () => {
+    const result = parseTokensInParenGroup('due 2026-01-20, p1, 2h', 0);
+    expect(result.tokens).toHaveLength(3);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[1].type).toBe('priority');
+    expect(result.tokens[2].type).toBe('estimate');
+    expect(result.hasRecognizedTokens).toBe(true);
+  });
+
+  test('parses text date format Month Day', () => {
+    const result = parseTokensInParenGroup('due Jan 15', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toMatch(/^\d{4}-01-15$/);
+  });
+
+  test('parses text date format Day Month', () => {
+    const result = parseTokensInParenGroup('due 15 Jan', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toMatch(/^\d{4}-01-15$/);
+  });
+
+  test('parses standalone date without due prefix', () => {
+    const result = parseTokensInParenGroup('2026-02-01', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toBe('2026-02-01');
+  });
+
+  test('parses standalone soft date without due prefix', () => {
+    const result = parseTokensInParenGroup('~2026-02-01', 0);
+    expect(result.tokens).toHaveLength(1);
+    expect(result.tokens[0].type).toBe('due');
+    expect(result.tokens[0].value).toBe('2026-02-01');
+    expect(result.tokens[0].soft).toBe(true);
+  });
+
+  test('returns empty tokens for unrecognized content', () => {
+    const result = parseTokensInParenGroup('CEO', 0);
+    expect(result.tokens).toHaveLength(0);
+    expect(result.hasRecognizedTokens).toBe(false);
+  });
+
+  test('preserves content in result', () => {
+    const result = parseTokensInParenGroup('p2, 1h', 0);
+    expect(result.content).toBe('p2, 1h');
+  });
+
+  test('calculates correct positions with groupStart offset', () => {
+    const result = parseTokensInParenGroup('p1', 10);
+    expect(result.tokens[0].start).toBe(11); // groupStart + 1 for opening paren
+    expect(result.tokens[0].end).toBe(13);
+  });
+});
+
+describe('extractParenGroups', () => {
+  test('extracts single parenthetical group', () => {
+    const result = extractParenGroups('Task (p1)', 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toBe('p1');
+    expect(result[0].hasRecognizedTokens).toBe(true);
+  });
+
+  test('extracts multiple parenthetical groups', () => {
+    const result = extractParenGroups('Task (p1) (2h)', 0);
+    expect(result).toHaveLength(2);
+    expect(result[0].content).toBe('p1');
+    expect(result[1].content).toBe('2h');
+  });
+
+  test('handles nested parentheses', () => {
+    const result = extractParenGroups('Task (outer (inner))', 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toBe('outer (inner)');
+  });
+
+  test('handles unmatched opening paren', () => {
+    const result = extractParenGroups('Task (incomplete', 0);
+    expect(result).toHaveLength(0);
+  });
+
+  test('returns empty array for no parentheses', () => {
+    const result = extractParenGroups('Task without parens', 0);
+    expect(result).toHaveLength(0);
+  });
+
+  test('correctly identifies non-metadata parentheses', () => {
+    const result = extractParenGroups('Call John (CEO)', 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toBe('CEO');
+    expect(result[0].hasRecognizedTokens).toBe(false);
+  });
+
+  test('tracks correct start and end positions', () => {
+    const result = extractParenGroups('Task (p1)', 0);
+    expect(result[0].start).toBe(5); // position of opening paren
+    expect(result[0].end).toBe(9); // position after closing paren
+  });
+
+  test('handles empty parentheses', () => {
+    const result = extractParenGroups('Task ()', 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toBe('');
+    expect(result[0].hasRecognizedTokens).toBe(false);
+  });
+
+  test('parses complex metadata in group', () => {
+    const result = extractParenGroups('Task (due 2026-01-20, p1, 2h, in progress)', 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].tokens).toHaveLength(4);
+    expect(result[0].tokens.map(t => t.type)).toEqual(['due', 'priority', 'estimate', 'progress']);
+  });
+
+  test('handles adjacent parenthetical groups', () => {
+    const result = extractParenGroups('(p1)(2h)', 0);
+    expect(result).toHaveLength(2);
+    expect(result[0].content).toBe('p1');
+    expect(result[1].content).toBe('2h');
   });
 });

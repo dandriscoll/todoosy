@@ -252,7 +252,7 @@ function parseTextDate(parts: string[]): { date: string | null; valid: boolean; 
   return { date: null, valid: false, partsConsumed: 0 };
 }
 
-function parseTokensInParenGroup(content: string, groupStart: number): ParenGroup {
+export function parseTokensInParenGroup(content: string, groupStart: number): ParenGroup {
   const tokens: ParsedToken[] = [];
   // Split by comma and/or whitespace
   const parts = content.split(/[,\s]+/).filter(p => p.length > 0);
@@ -456,7 +456,7 @@ function parseTokensInParenGroup(content: string, groupStart: number): ParenGrou
   };
 }
 
-function extractParenGroups(line: string, lineStart: number): ParenGroup[] {
+export function extractParenGroups(line: string, lineStart: number): ParenGroup[] {
   const groups: ParenGroup[] = [];
   let i = 0;
 
