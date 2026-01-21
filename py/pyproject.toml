@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "todoosy"
-version = "0.2.6"
+version = "0.3.0"
 description = "Todoosy - Markdown-based todo system parser, formatter, linter, and query engine"
 readme = "README.md"
 license = {text = "MIT"}
