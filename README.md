@@ -51,9 +51,9 @@ This is a comment for the heading.
 
 Every document should have a `# Misc` heading at the end for uncategorized items.
 
-### Scheme File
+### Settings File
 
-Optional `todoosy.scheme.md` file for timezone and priority labels:
+Optional `todoosy.settings.md` file for timezone, priority labels, and custom settings:
 
 ```markdown
 # Timezone
@@ -65,6 +65,10 @@ America/New_York
 P0 - Critical
 P1 - High
 P2 - Normal
+
+# UI Color
+
+blue
 ```
 
 ## Repository Structure
@@ -87,7 +91,8 @@ Both implementations provide:
 | `lint(text, scheme?)` | Lint document and return warnings |
 | `queryUpcoming(text, scheme?)` | Get items with due dates, sorted |
 | `queryMisc(text)` | Get items under `# Misc` |
-| `parseScheme(text)` | Parse scheme file |
+| `parseSettings(text)` | Parse settings file (returns `Settings` with extended settings) |
+| `parseScheme(text)` | Parse settings file (returns legacy `Scheme` format) |
 
 ## TypeScript (JavaScript)
 
@@ -216,8 +221,8 @@ Test cases are shared golden files in `/testdata/`. Each test case is a director
 | `expected_warnings.json` | Expected linter warnings |
 | `expected_upcoming.json` | Expected upcoming query results |
 | `expected_misc.json` | Expected misc query results |
-| `scheme.md` (optional) | Scheme file for the test |
-| `expected_scheme.json` (optional) | Expected parsed scheme |
+| `settings.md` (optional) | Settings file for the test |
+| `expected_settings.json` (optional) | Expected parsed settings |
 
 To add a new test case:
 

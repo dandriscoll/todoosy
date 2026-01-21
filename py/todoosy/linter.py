@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .parser import parse
-from .types import Warning, Scheme
+from .types import Warning, Scheme, Settings
 
 VALID_DATE_FORMATS = [
     re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$'),       # YYYY-MM-DD or YYYY-M-D
@@ -333,6 +333,33 @@ def lint_scheme(scheme: Scheme) -> LintResult:
         warnings.append(Warning(
             code='INVALID_FORMATTING_STYLE',
             message=f"Invalid formatting style: '{scheme.formatting_style}'. Valid styles are: {', '.join(sorted(VALID_FORMATTING_STYLES))}",
+            line=None,
+            column=None,
+            span=None,
+        ))
+
+    return LintResult(warnings=warnings)
+
+
+def lint_settings(settings: Settings) -> LintResult:
+    """Lint a parsed settings object for invalid values."""
+    warnings: list[Warning] = []
+
+    # Check if calendar_format is valid
+    if settings.calendar_format.lower() not in VALID_CALENDAR_FORMATS:
+        warnings.append(Warning(
+            code='INVALID_CALENDAR_FORMAT',
+            message=f"Invalid calendar format: '{settings.calendar_format}'. Valid formats are: {', '.join(sorted(VALID_CALENDAR_FORMATS))}",
+            line=None,
+            column=None,
+            span=None,
+        ))
+
+    # Check if formatting_style is valid
+    if settings.formatting_style.lower() not in VALID_FORMATTING_STYLES:
+        warnings.append(Warning(
+            code='INVALID_FORMATTING_STYLE',
+            message=f"Invalid formatting style: '{settings.formatting_style}'. Valid styles are: {', '.join(sorted(VALID_FORMATTING_STYLES))}",
             line=None,
             column=None,
             span=None,

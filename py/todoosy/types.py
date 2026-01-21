@@ -72,6 +72,25 @@ class Scheme:
     formatting_style: str = "roomy"  # Valid: roomy, balanced, tight
 
 
+# SettingValue can be: str, list[str], or dict[str, str]
+SettingValue = str | list[str] | dict[str, str]
+
+
+@dataclass
+class Settings:
+    """Extended settings interface that supports both known and custom settings."""
+
+    # Known settings with typed values
+    timezone: Optional[str] = None
+    priorities: dict[str, str] = field(default_factory=dict)
+    misc: str = "todoosy.md/Misc"
+    calendar_format: str = "yyyy-mm-dd"
+    formatting_style: str = "roomy"
+
+    # Extended settings for custom user-defined settings
+    extended: dict[str, SettingValue] = field(default_factory=dict)
+
+
 @dataclass
 class ParsedToken:
     type: str  # 'due' | 'priority' | 'estimate'

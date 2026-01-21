@@ -244,15 +244,18 @@ Sort order (stable sort):
 
 Items without a due date are EXCLUDED from the Upcoming view.
 
-### 7. Scheme File
+### 7. Settings File
 
 #### 7.1 File Definition
 
-The scheme file MUST be named exactly `todoosy.scheme.md` and located in the same directory as the todoosy document (or a configured location).
+The settings file MUST be named exactly `todoosy.settings.md` and located in the same directory as the todoosy document (or a configured location).
 
-The scheme file is valid Markdown and defines:
+The settings file is valid Markdown and defines:
 - Timezone for date interpretation
 - Priority labels and ordering
+- Calendar format for date output
+- Formatting style
+- Custom extended settings
 
 #### 7.2 Timezone Section
 
@@ -376,6 +379,43 @@ Rules:
 - This setting enables multi-file organization while maintaining a single designated misc section
 - The linter and formatter only enforce misc section rules (position at EOF, etc.) when operating on the specified file
 - For files that do not match the configured misc filename, no misc section requirements apply
+
+#### 7.8 Extended Settings
+
+Any heading that is not a known setting (Timezone, Priorities, Misc, Calendar Format, Formatting Style) is captured as an extended setting. Extended settings allow applications to store custom configuration in the settings file.
+
+Value types are automatically inferred:
+
+1. **Single Value** - First non-empty line after heading
+   ```markdown
+   # UI Color
+
+   blue
+   ```
+
+2. **List Value** - Bulleted list items (- or *)
+   ```markdown
+   # Tags
+
+   - work
+   - personal
+   - urgent
+   ```
+
+3. **Key-Value Map** - Lines with `key - value` format
+   ```markdown
+   # Theme Colors
+
+   background - #ffffff
+   foreground - #000000
+   accent - #0066cc
+   ```
+
+Rules:
+- Extended setting names preserve their original capitalization
+- The parser automatically infers value types based on content structure
+- Empty settings (no value content) are ignored
+- Extended settings do not affect core Todoosy functionality
 
 ---
 
@@ -526,7 +566,7 @@ All dates normalized to ISO 8601 internally. Dates can be specified with or with
 
 ### Example 9: Complete Document with Scheme
 
-**todoosy.scheme.md:**
+**todoosy.settings.md:**
 ```markdown
 # Timezone
 
@@ -569,7 +609,7 @@ Sprint tasks for this week.
 
 ### Example 10: Multi-File Organization with Custom Misc Location
 
-**todoosy.scheme.md:**
+**todoosy.settings.md:**
 ```markdown
 # Timezone
 

@@ -15,8 +15,9 @@ from todoosy import (
     query_upcoming,
     query_misc,
     parse_scheme,
+    parse_settings,
 )
-from todoosy.linter import lint_scheme
+from todoosy.linter import lint_scheme, lint_settings
 
 # Get test data directory
 TEST_DIR = Path(__file__).parent.parent.parent / 'testdata'
@@ -92,7 +93,7 @@ class TestLinter:
     def test_lint(self, test_case):
         input_md = load_file(test_case, 'input.md')
         expected_warnings = load_json(test_case, 'expected_warnings.json')
-        scheme_text = load_file(test_case, 'scheme.md')
+        scheme_text = load_file(test_case, 'settings.md')
         scheme = parse_scheme(scheme_text) if scheme_text else None
 
         if not input_md or not expected_warnings:
@@ -110,7 +111,7 @@ class TestQueryUpcoming:
     def test_query_upcoming(self, test_case):
         input_md = load_file(test_case, 'input.md')
         expected_upcoming = load_json(test_case, 'expected_upcoming.json')
-        scheme_text = load_file(test_case, 'scheme.md')
+        scheme_text = load_file(test_case, 'settings.md')
         scheme = parse_scheme(scheme_text) if scheme_text else None
 
         if not input_md or not expected_upcoming:
@@ -144,35 +145,35 @@ class TestQueryMisc:
             assert actual.title_text == expected['title_text']
 
 
-class TestSchemeParser:
+class TestSettingsParser:
     @pytest.mark.parametrize('test_case', get_test_cases())
-    def test_parse_scheme(self, test_case):
-        scheme_text = load_file(test_case, 'scheme.md')
-        expected_scheme = load_json(test_case, 'expected_scheme.json')
+    def test_parse_settings(self, test_case):
+        settings_text = load_file(test_case, 'settings.md')
+        expected_settings = load_json(test_case, 'expected_settings.json')
 
-        if not scheme_text or not expected_scheme:
-            return  # Scheme is optional
+        if not settings_text or not expected_settings:
+            return  # Settings are optional
 
-        scheme = parse_scheme(scheme_text)
+        settings = parse_settings(settings_text)
 
-        assert scheme.timezone == expected_scheme['timezone']
-        assert scheme.priorities == expected_scheme['priorities']
-        if 'calendar_format' in expected_scheme:
-            assert scheme.calendar_format == expected_scheme['calendar_format']
+        assert settings.timezone == expected_settings['timezone']
+        assert settings.priorities == expected_settings['priorities']
+        if 'calendar_format' in expected_settings:
+            assert settings.calendar_format == expected_settings['calendar_format']
 
     @pytest.mark.parametrize('test_case', get_test_cases())
-    def test_lint_scheme(self, test_case):
-        scheme_text = load_file(test_case, 'scheme.md')
-        expected_scheme_warnings = load_json(test_case, 'expected_scheme_warnings.json')
+    def test_lint_settings(self, test_case):
+        settings_text = load_file(test_case, 'settings.md')
+        expected_settings_warnings = load_json(test_case, 'expected_settings_warnings.json')
 
-        if not scheme_text or expected_scheme_warnings is None:
-            return  # Scheme warnings are optional
+        if not settings_text or expected_settings_warnings is None:
+            return  # Settings warnings are optional
 
-        scheme = parse_scheme(scheme_text)
-        result = lint_scheme(scheme)
+        settings = parse_settings(settings_text)
+        result = lint_settings(settings)
 
         actual_codes = sorted([w.code for w in result.warnings])
-        expected_codes = sorted([w['code'] for w in expected_scheme_warnings])
+        expected_codes = sorted([w['code'] for w in expected_settings_warnings])
         assert actual_codes == expected_codes
 
 
@@ -364,3 +365,62 @@ tight
         scheme_obj = Scheme(timezone=None, priorities={}, misc='todoosy.md/Misc', calendar_format='yyyy-mm-dd', formatting_style='tight')
         formatted = format(input_text, scheme_obj)
         assert '# Work\n## Sub\n- Task' in formatted
+
+
+class TestExtendedSettings:
+    def test_parses_single_value_extended_setting(self):
+        settings = parse_settings('''
+# Timezone
+
+America/Denver
+
+# UI Color
+
+blue
+''')
+        assert settings.timezone == 'America/Denver'
+        assert settings.extended['UI Color'] == 'blue'
+
+    def test_parses_list_extended_setting(self):
+        settings = parse_settings('''
+# Tags
+
+- work
+- personal
+- urgent
+''')
+        assert settings.extended['Tags'] == ['work', 'personal', 'urgent']
+
+    def test_parses_key_value_extended_setting(self):
+        settings = parse_settings('''
+# Theme Colors
+
+background - #ffffff
+foreground - #000000
+accent - #0066cc
+''')
+        assert settings.extended['Theme Colors'] == {
+            'background': '#ffffff',
+            'foreground': '#000000',
+            'accent': '#0066cc',
+        }
+
+    def test_preserves_original_capitalization(self):
+        settings = parse_settings('''
+# My Custom Setting
+
+value
+''')
+        assert settings.extended['My Custom Setting'] == 'value'
+        assert 'my custom setting' not in settings.extended
+
+    def test_ignores_empty_extended_settings(self):
+        settings = parse_settings('''
+# Empty Setting
+
+# Non-empty Setting
+
+value
+''')
+        assert 'Empty Setting' not in settings.extended
+        assert settings.extended['Non-empty Setting'] == 'value'

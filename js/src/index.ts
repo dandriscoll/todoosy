@@ -8,7 +8,7 @@ export type { ParseResult } from './parser.js';
 export { format } from './formatter.js';
 export { lint } from './linter.js';
 export { queryUpcoming, queryMisc } from './query.js';
-export { parseScheme } from './scheme.js';
+export { parseScheme, parseSettings } from './settings.js';
 
 export type {
   AST,
@@ -21,6 +21,8 @@ export type {
   MiscItem,
   MiscResult,
   Scheme,
+  Settings,
+  SettingValue,
   ParsedToken,
   ParenGroup,
 } from './types.js';

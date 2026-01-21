@@ -4,7 +4,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { parse, format, lint, queryUpcoming, queryMisc, parseScheme } from './index.js';
+import { parse, format, lint, queryUpcoming, queryMisc, parseScheme, parseSettings } from './index.js';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -92,7 +92,7 @@ describe('Todoosy Golden Tests', () => {
     test.each(testCases)('%s - lint', (testCase) => {
       const input = loadFile(testCase, 'input.md');
       const expectedWarnings = loadJson(testCase, 'expected_warnings.json');
-      const schemeText = loadFile(testCase, 'scheme.md');
+      const schemeText = loadFile(testCase, 'settings.md');
       const scheme = schemeText ? parseScheme(schemeText) : undefined;
 
       if (!input || !expectedWarnings) {
@@ -113,7 +113,7 @@ describe('Todoosy Golden Tests', () => {
     test.each(testCases)('%s - queryUpcoming', (testCase) => {
       const input = loadFile(testCase, 'input.md');
       const expectedUpcoming = loadJson(testCase, 'expected_upcoming.json');
-      const schemeText = loadFile(testCase, 'scheme.md');
+      const schemeText = loadFile(testCase, 'settings.md');
       const scheme = schemeText ? parseScheme(schemeText) : undefined;
 
       if (!input || !expectedUpcoming) {
@@ -165,20 +165,20 @@ describe('Todoosy Golden Tests', () => {
     });
   });
 
-  describe('Scheme Parser', () => {
-    test.each(testCases)('%s - parseScheme', (testCase) => {
-      const schemeText = loadFile(testCase, 'scheme.md');
-      const expectedScheme = loadJson(testCase, 'expected_scheme.json');
+  describe('Settings Parser', () => {
+    test.each(testCases)('%s - parseSettings', (testCase) => {
+      const settingsText = loadFile(testCase, 'settings.md');
+      const expectedSettings = loadJson(testCase, 'expected_settings.json');
 
-      if (!schemeText || !expectedScheme) {
-        // Scheme is optional
+      if (!settingsText || !expectedSettings) {
+        // Settings are optional
         return;
       }
 
-      const scheme = parseScheme(schemeText);
+      const settings = parseSettings(settingsText);
 
-      expect(scheme.timezone).toBe((expectedScheme as any).timezone);
-      expect(scheme.priorities).toEqual((expectedScheme as any).priorities);
+      expect(settings.timezone).toBe((expectedSettings as any).timezone);
+      expect(settings.priorities).toEqual((expectedSettings as any).priorities);
     });
   });
 });
@@ -343,5 +343,69 @@ balanced
   test('defaults formatting_style to roomy', () => {
     const scheme = parseScheme('');
     expect(scheme.formatting_style).toBe('roomy');
+  });
+});
+
+describe('Settings Parser Extended Settings', () => {
+  test('parses single value extended setting', () => {
+    const settings = parseSettings(`
+# Timezone
+
+America/Denver
+
+# UI Color
+
+blue
+`);
+    expect(settings.timezone).toBe('America/Denver');
+    expect(settings.extended['UI Color']).toBe('blue');
+  });
+
+  test('parses list extended setting', () => {
+    const settings = parseSettings(`
+# Tags
+
+- work
+- personal
+- urgent
+`);
+    expect(settings.extended['Tags']).toEqual(['work', 'personal', 'urgent']);
+  });
+
+  test('parses key-value extended setting', () => {
+    const settings = parseSettings(`
+# Theme Colors
+
+background - #ffffff
+foreground - #000000
+accent - #0066cc
+`);
+    expect(settings.extended['Theme Colors']).toEqual({
+      background: '#ffffff',
+      foreground: '#000000',
+      accent: '#0066cc',
+    });
+  });
+
+  test('preserves original capitalization in extended setting names', () => {
+    const settings = parseSettings(`
+# My Custom Setting
+
+value
+`);
+    expect(settings.extended['My Custom Setting']).toBe('value');
+    expect(settings.extended['my custom setting']).toBeUndefined();
+  });
+
+  test('ignores empty extended settings', () => {
+    const settings = parseSettings(`
+# Empty Setting
+
+# Non-empty Setting
+
+value
+`);
+    expect(settings.extended['Empty Setting']).toBeUndefined();
+    expect(settings.extended['Non-empty Setting']).toBe('value');
   });
 });

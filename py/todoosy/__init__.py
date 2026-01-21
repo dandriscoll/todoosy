@@ -6,7 +6,7 @@ from .parser import parse, ParseResult
 from .formatter import format
 from .linter import lint, LintResult
 from .query import query_upcoming, query_misc, UpcomingResult, MiscResult
-from .scheme import parse_scheme
+from .settings import parse_scheme, parse_settings
 from .types import (
     AST,
     ItemNode,
@@ -15,6 +15,8 @@ from .types import (
     UpcomingItem,
     MiscItem,
     Scheme,
+    Settings,
+    SettingValue,
 )
 
 __all__ = [
@@ -28,6 +30,7 @@ __all__ = [
     'UpcomingResult',
     'MiscResult',
     'parse_scheme',
+    'parse_settings',
     'AST',
     'ItemNode',
     'ItemMetadata',
@@ -35,6 +38,8 @@ __all__ = [
     'UpcomingItem',
     'MiscItem',
     'Scheme',
+    'Settings',
+    'SettingValue',
 ]
 
 __version__ = '0.1.0'

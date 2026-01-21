@@ -73,6 +73,30 @@ export interface Scheme {
   formatting_style: string; // Valid: roomy, balanced, tight
 }
 
+/**
+ * Represents the value of a setting in the settings file.
+ * - string: Single value (e.g., timezone, calendar format)
+ * - string[]: List of values (e.g., tags, categories)
+ * - Record<string, string>: Key-value pairs (e.g., priorities, colors)
+ */
+export type SettingValue = string | string[] | Record<string, string>;
+
+/**
+ * Extended settings interface that supports both known and custom settings.
+ * Known settings are typed explicitly, custom settings are captured in `extended`.
+ */
+export interface Settings {
+  // Known settings with typed values
+  timezone: string | null;
+  priorities: Record<string, string>;
+  misc: string;
+  calendar_format: string;
+  formatting_style: string;
+
+  // Extended settings for custom user-defined settings
+  extended: Record<string, SettingValue>;
+}
+
 export interface ParsedToken {
   type: 'due' | 'priority' | 'estimate' | 'progress';
   value: string | number;
