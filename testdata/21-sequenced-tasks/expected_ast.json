@@ -1,0 +1,412 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Buy car",
+      "title_text": "Buy car",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "item_span": [
+        0,
+        9
+      ],
+      "subtree_span": [
+        0,
+        78
+      ],
+      "line": 1,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "level": null,
+      "raw_line": "1. Research models",
+      "title_text": "Research models",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        11,
+        29
+      ],
+      "subtree_span": [
+        11,
+        29
+      ],
+      "line": 3,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "level": null,
+      "raw_line": "2. Get financing",
+      "title_text": "Get financing",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        30,
+        46
+      ],
+      "subtree_span": [
+        30,
+        46
+      ],
+      "line": 4,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 2
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "level": null,
+      "raw_line": "3. Make appointment",
+      "title_text": "Make appointment",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        47,
+        66
+      ],
+      "subtree_span": [
+        47,
+        66
+      ],
+      "line": 5,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 3
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "level": null,
+      "raw_line": "4. Purchase",
+      "title_text": "Purchase",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        67,
+        78
+      ],
+      "subtree_span": [
+        67,
+        78
+      ],
+      "line": 6,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 4
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Tasks with bullets",
+      "title_text": "Tasks with bullets",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "6",
+        "7"
+      ],
+      "item_span": [
+        80,
+        100
+      ],
+      "subtree_span": [
+        80,
+        131
+      ],
+      "line": 8,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "level": null,
+      "raw_line": "- Regular task",
+      "title_text": "Regular task",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        102,
+        116
+      ],
+      "subtree_span": [
+        102,
+        116
+      ],
+      "line": 10,
+      "column": 1,
+      "marker_type": "bullet",
+      "sequence_number": null
+    },
+    {
+      "id": "7",
+      "type": "list",
+      "level": null,
+      "raw_line": "- Another task",
+      "title_text": "Another task",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        117,
+        131
+      ],
+      "subtree_span": [
+        117,
+        131
+      ],
+      "line": 11,
+      "column": 1,
+      "marker_type": "bullet",
+      "sequence_number": null
+    },
+    {
+      "id": "8",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Mixed list",
+      "title_text": "Mixed list",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "9",
+        "10",
+        "11"
+      ],
+      "item_span": [
+        133,
+        145
+      ],
+      "subtree_span": [
+        133,
+        197
+      ],
+      "line": 13,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    },
+    {
+      "id": "9",
+      "type": "list",
+      "level": null,
+      "raw_line": "- Bullet item",
+      "title_text": "Bullet item",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        147,
+        160
+      ],
+      "subtree_span": [
+        147,
+        160
+      ],
+      "line": 15,
+      "column": 1,
+      "marker_type": "bullet",
+      "sequence_number": null
+    },
+    {
+      "id": "10",
+      "type": "list",
+      "level": null,
+      "raw_line": "1. First numbered",
+      "title_text": "First numbered",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        161,
+        178
+      ],
+      "subtree_span": [
+        161,
+        178
+      ],
+      "line": 16,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 1
+    },
+    {
+      "id": "11",
+      "type": "list",
+      "level": null,
+      "raw_line": "2. Second numbered",
+      "title_text": "Second numbered",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        179,
+        197
+      ],
+      "subtree_span": [
+        179,
+        197
+      ],
+      "line": 17,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 2
+    },
+    {
+      "id": "12",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        199,
+        205
+      ],
+      "subtree_span": [
+        199,
+        205
+      ],
+      "line": 19,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    }
+  ],
+  "root_ids": [
+    "0",
+    "5",
+    "8",
+    "12"
+  ]
+}

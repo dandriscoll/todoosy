@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .parser import parse
-from .types import Warning, Scheme, Settings
+from .types import Warning, Scheme, Settings, ItemNode
 
 VALID_DATE_FORMATS = [
     re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$'),       # YYYY-MM-DD or YYYY-M-D
@@ -45,6 +45,8 @@ TEXT_DATE_DAY_FIRST_REGEX = re.compile(
 
 VALID_CALENDAR_FORMATS = {'yyyy-mm-dd', 'yyyy/mm/dd', 'mm/dd/yyyy', 'dd/mm/yyyy'}
 VALID_FORMATTING_STYLES = {'roomy', 'balanced', 'tight'}
+VALID_HASHTAG_REGEX = re.compile(r'^#[a-zA-Z][a-zA-Z0-9_-]*$')
+HASHTAG_LIKE_REGEX = re.compile(r'#[^\s,)]*')
 
 
 @dataclass
@@ -232,7 +234,8 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                 break
 
             # Check for invalid priority tokens (e.g., pX)
-            invalid_priority_pattern = re.compile(r'\bp([a-zA-Z][^\s,)]*)', re.IGNORECASE)
+            # Use negative lookbehind to exclude hashtags (e.g., #personal)
+            invalid_priority_pattern = re.compile(r'(?<!#)\bp([a-zA-Z][^\s,)]*)', re.IGNORECASE)
             for ip_match in invalid_priority_pattern.finditer(content):
                 # Skip if this is "progress" (part of "in progress" progress state)
                 if ip_match.group(0).lower() == 'progress':
@@ -258,6 +261,19 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                         line=item.line,
                         column=token_start - item.item_span[0] + 1,
                         span=(token_start, token_start + len(ie_match.group(0))),
+                    ))
+
+            # Check for invalid hashtags (e.g., #123, #)
+            for ht_match in HASHTAG_LIKE_REGEX.finditer(content):
+                hashtag = ht_match.group(0)
+                if not VALID_HASHTAG_REGEX.match(hashtag):
+                    token_start = paren_start + 1 + ht_match.start()
+                    warnings.append(Warning(
+                        code='INVALID_HASHTAG',
+                        message=f'Invalid hashtag format: {hashtag} (must start with # followed by a letter)',
+                        line=item.line,
+                        column=token_start - item.item_span[0] + 1,
+                        span=(token_start, token_start + len(hashtag)),
                     ))
 
         # Check for comment indentation (list items only)
@@ -310,6 +326,56 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                     column=1,
                     span=heading_span,
                 ))
+
+    # Check for sequence issues (gaps and duplicates in numbered lists)
+    item_map = {item.id: item for item in ast.items}
+
+    for item in ast.items:
+        if not item.children:
+            continue
+
+        # Collect numbered children
+        numbered_children: list[tuple[str, int, 'ItemNode']] = []
+        for child_id in item.children:
+            child = item_map.get(child_id)
+            if child and child.marker_type == 'numbered' and child.sequence_number is not None:
+                numbered_children.append((child_id, child.sequence_number, child))
+
+        if not numbered_children:
+            continue
+
+        # Check for gaps - numbers should be consecutive starting from 1
+        for i, (child_id, seq_num, child) in enumerate(numbered_children):
+            expected = i + 1
+            if seq_num != expected:
+                warnings.append(Warning(
+                    code='SEQUENCE_GAP',
+                    message=f"Sequence gap: expected {expected}, found {seq_num}",
+                    line=child.line,
+                    column=child.column,
+                    span=child.item_span,
+                ))
+
+        # Check for duplicates
+        seq_num_counts: dict[int, list[tuple[str, int, 'ItemNode']]] = {}
+        for child_data in numbered_children:
+            seq_num = child_data[1]
+            if seq_num not in seq_num_counts:
+                seq_num_counts[seq_num] = []
+            seq_num_counts[seq_num].append(child_data)
+
+        for seq_num, children in seq_num_counts.items():
+            if len(children) > 1:
+                # Warn for all but the first occurrence
+                for i in range(1, len(children)):
+                    child = children[i][2]
+                    warnings.append(Warning(
+                        code='SEQUENCE_DUPLICATE',
+                        message=f"Duplicate sequence number: {seq_num}",
+                        line=child.line,
+                        column=child.column,
+                        span=child.item_span,
+                    ))
 
     return LintResult(warnings=warnings)
 

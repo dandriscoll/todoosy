@@ -1,0 +1,287 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Sequence with gaps",
+      "title_text": "Sequence with gaps",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "1",
+        "2",
+        "3"
+      ],
+      "item_span": [
+        0,
+        20
+      ],
+      "subtree_span": [
+        0,
+        71
+      ],
+      "line": 1,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "level": null,
+      "raw_line": "1. First item",
+      "title_text": "First item",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        22,
+        35
+      ],
+      "subtree_span": [
+        22,
+        35
+      ],
+      "line": 3,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "level": null,
+      "raw_line": "2. Second item",
+      "title_text": "Second item",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        36,
+        50
+      ],
+      "subtree_span": [
+        36,
+        50
+      ],
+      "line": 4,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 2
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "level": null,
+      "raw_line": "4. Fourth item (gap)",
+      "title_text": "Fourth item (gap)",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        51,
+        71
+      ],
+      "subtree_span": [
+        51,
+        71
+      ],
+      "line": 5,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 4
+    },
+    {
+      "id": "4",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Sequence with duplicates",
+      "title_text": "Sequence with duplicates",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "5",
+        "6",
+        "7"
+      ],
+      "item_span": [
+        73,
+        99
+      ],
+      "subtree_span": [
+        73,
+        148
+      ],
+      "line": 7,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    },
+    {
+      "id": "5",
+      "type": "list",
+      "level": null,
+      "raw_line": "1. First item",
+      "title_text": "First item",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        101,
+        114
+      ],
+      "subtree_span": [
+        101,
+        114
+      ],
+      "line": 9,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 1
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "level": null,
+      "raw_line": "1. Duplicate first",
+      "title_text": "Duplicate first",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        115,
+        133
+      ],
+      "subtree_span": [
+        115,
+        133
+      ],
+      "line": 10,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 1
+    },
+    {
+      "id": "7",
+      "type": "list",
+      "level": null,
+      "raw_line": "2. Second item",
+      "title_text": "Second item",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        134,
+        148
+      ],
+      "subtree_span": [
+        134,
+        148
+      ],
+      "line": 11,
+      "column": 1,
+      "marker_type": "numbered",
+      "sequence_number": 2
+    },
+    {
+      "id": "8",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        150,
+        156
+      ],
+      "subtree_span": [
+        150,
+        156
+      ],
+      "line": 13,
+      "column": 1,
+      "marker_type": null,
+      "sequence_number": null
+    }
+  ],
+  "root_ids": [
+    "0",
+    "4",
+    "8"
+  ]
+}

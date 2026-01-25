@@ -1,0 +1,18 @@
+{
+  "warnings": [
+    {
+      "code": "INVALID_HASHTAG",
+      "message": "Invalid hashtag format: #123 (must start with # followed by a letter)",
+      "line": 3,
+      "column": 26,
+      "span": [33, 37]
+    },
+    {
+      "code": "INVALID_HASHTAG",
+      "message": "Invalid hashtag format: # (must start with # followed by a letter)",
+      "line": 4,
+      "column": 18,
+      "span": [56, 57]
+    }
+  ]
+}

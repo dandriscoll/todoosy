@@ -8,12 +8,16 @@ export interface ItemMetadata {
   priority: number | null;
   estimate_minutes: number | null;
   progress: string | null;
+  hashtags: string[];           // Direct hashtags (without # prefix, lowercase)
+  effective_hashtags: string[]; // All hashtags including inherited from ancestors
 }
 
 export interface ItemNode {
   id: string;
   type: 'heading' | 'list';
   level?: number; // Only for headings
+  marker_type?: 'bullet' | 'numbered'; // Only for list items
+  sequence_number?: number; // Original number for numbered items
   raw_line: string;
   title_text: string;
   metadata: ItemMetadata;
@@ -98,7 +102,7 @@ export interface Settings {
 }
 
 export interface ParsedToken {
-  type: 'due' | 'priority' | 'estimate' | 'progress';
+  type: 'due' | 'priority' | 'estimate' | 'progress' | 'hashtag';
   value: string | number;
   raw: string;
   start: number;

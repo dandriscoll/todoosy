@@ -15,6 +15,7 @@ HEADING_REGEX = re.compile(r'^(#{1,6})\s+(.*)$')
 LIST_ITEM_REGEX = re.compile(r'^(\s*)([-*]|\d+\.)\s+(.*)$')
 PRIORITY_REGEX = re.compile(r'^p(\d+)$', re.IGNORECASE)
 ESTIMATE_REGEX = re.compile(r'^(\d+)([mhd])$', re.IGNORECASE)
+HASHTAG_REGEX = re.compile(r'^#([a-zA-Z][a-zA-Z0-9_-]*)$')
 
 MONTH_NAMES: dict[str, int] = {
     'january': 1, 'jan': 1,
@@ -346,6 +347,18 @@ def parse_tokens_in_paren_group(content: str, group_start: int) -> ParenGroup:
                 skip_indices.add(i + 1)
                 continue
 
+        # Check for hashtags
+        hashtag_match = HASHTAG_REGEX.match(part)
+        if hashtag_match:
+            tokens.append(ParsedToken(
+                type='hashtag',
+                value=hashtag_match.group(1).lower(),
+                raw=part,
+                start=absolute_start,
+                end=absolute_end,
+            ))
+            continue
+
         # Check for soft date prefix (~) on standalone dates
         is_soft_standalone = False
         part_to_check = part
@@ -449,7 +462,10 @@ def build_metadata(groups: list[ParenGroup]) -> ItemMetadata:
     # Collect all tokens from all groups
     all_tokens = [token for group in groups for token in group.tokens]
 
-    # Last occurrence wins
+    # Collect unique hashtags
+    hashtag_set: set[str] = set()
+
+    # Last occurrence wins for non-hashtag tokens
     for token in all_tokens:
         if token.type == 'due':
             metadata.due = str(token.value)
@@ -460,6 +476,11 @@ def build_metadata(groups: list[ParenGroup]) -> ItemMetadata:
             metadata.estimate_minutes = int(token.value)
         elif token.type == 'progress':
             metadata.progress = str(token.value)
+        elif token.type == 'hashtag':
+            hashtag_set.add(str(token.value))
+
+    # Store sorted unique hashtags
+    metadata.hashtags = sorted(hashtag_set)
 
     return metadata
 
@@ -536,6 +557,11 @@ def parse(text: str) -> ParseResult:
             title_text = build_title_text(content, groups)
             metadata = build_metadata(groups)
 
+            # Determine marker type and sequence number
+            is_numbered = bool(re.match(r'^\d+\.$', marker))
+            marker_type = 'numbered' if is_numbered else 'bullet'
+            sequence_number = int(marker[:-1]) if is_numbered else None
+
             item_id = str(next_id)
             next_id += 1
 
@@ -551,6 +577,8 @@ def parse(text: str) -> ParseResult:
                 subtree_span=(line_start, line_end),
                 line=line_num + 1,
                 column=1,
+                marker_type=marker_type,
+                sequence_number=sequence_number,
             )
 
             items.append(item)
@@ -640,6 +668,21 @@ def parse(text: str) -> ParseResult:
         item.id for item in items
         if not any(item.id in other.children for other in items)
     ]
+
+    # Compute effective_hashtags through inheritance (pre-order traversal)
+    item_map = {item.id: item for item in items}
+
+    def compute_effective_hashtags(item_id: str, parent_effective_hashtags: list[str]) -> None:
+        item = item_map[item_id]
+        # Merge parent's effective_hashtags with own hashtags, deduplicate and sort
+        combined = set(parent_effective_hashtags) | set(item.metadata.hashtags)
+        item.metadata.effective_hashtags = sorted(combined)
+
+        for child_id in item.children:
+            compute_effective_hashtags(child_id, item.metadata.effective_hashtags)
+
+    for root_id in actual_root_ids:
+        compute_effective_hashtags(root_id, [])
 
     return ParseResult(
         ast=AST(items=items, root_ids=actual_root_ids),

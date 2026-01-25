@@ -141,3 +141,62 @@ export function queryMisc(text: string, scheme?: Scheme): MiscResult {
 
   return { items };
 }
+
+export interface HashtagItem {
+  id: string;
+  title_text: string;
+  path: string;
+  item_span: [number, number];
+  hashtags: string[];           // Direct hashtags
+  effective_hashtags: string[]; // Including inherited
+}
+
+export interface HashtagResult {
+  items: HashtagItem[];
+}
+
+export interface HashtagListResult {
+  hashtags: string[];
+}
+
+export function queryByHashtag(text: string, hashtag: string): HashtagResult {
+  const { ast } = parse(text);
+  const items: HashtagItem[] = [];
+
+  // Normalize hashtag (lowercase, remove # if present)
+  const normalizedHashtag = hashtag.replace(/^#/, '').toLowerCase();
+
+  // Find all items with the hashtag (using effective_hashtags for inheritance)
+  for (const item of ast.items) {
+    if (item.metadata.effective_hashtags.includes(normalizedHashtag)) {
+      items.push({
+        id: item.id,
+        title_text: item.title_text,
+        path: buildPath(item.id, ast),
+        item_span: item.item_span,
+        hashtags: item.metadata.hashtags,
+        effective_hashtags: item.metadata.effective_hashtags,
+      });
+    }
+  }
+
+  // Sort by document order
+  items.sort((a, b) => a.item_span[0] - b.item_span[0]);
+
+  return { items };
+}
+
+export function listHashtags(text: string): HashtagListResult {
+  const { ast } = parse(text);
+  const hashtagSet = new Set<string>();
+
+  // Collect all unique hashtags from all items
+  for (const item of ast.items) {
+    for (const tag of item.metadata.hashtags) {
+      hashtagSet.add(tag);
+    }
+  }
+
+  // Return sorted list
+  return { hashtags: [...hashtagSet].sort() };
+}

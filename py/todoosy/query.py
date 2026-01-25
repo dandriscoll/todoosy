@@ -121,3 +121,65 @@ def query_misc(text: str, scheme: Optional[Scheme] = None) -> MiscResult:
             ))
 
     return MiscResult(items=items)
+
+
+@dataclass
+class HashtagItem:
+    id: str
+    title_text: str
+    path: str
+    item_span: tuple[int, int]
+    hashtags: list[str]           # Direct hashtags
+    effective_hashtags: list[str] # Including inherited
+
+
+@dataclass
+class HashtagResult:
+    items: list[HashtagItem] = field(default_factory=list)
+
+
+@dataclass
+class HashtagListResult:
+    hashtags: list[str] = field(default_factory=list)
+
+
+def query_by_hashtag(text: str, hashtag: str) -> HashtagResult:
+    """Find all items with a specific hashtag (including inherited)."""
+    result = parse(text)
+    ast = result.ast
+    items: list[HashtagItem] = []
+
+    # Normalize hashtag (lowercase, remove # if present)
+    normalized_hashtag = hashtag.lstrip('#').lower()
+
+    # Find all items with the hashtag (using effective_hashtags for inheritance)
+    for item in ast.items:
+        if normalized_hashtag in item.metadata.effective_hashtags:
+            items.append(HashtagItem(
+                id=item.id,
+                title_text=item.title_text,
+                path=build_path(item.id, ast),
+                item_span=item.item_span,
+                hashtags=item.metadata.hashtags,
+                effective_hashtags=item.metadata.effective_hashtags,
+            ))
+
+    # Sort by document order
+    items.sort(key=lambda x: x.item_span[0])
+
+    return HashtagResult(items=items)
+
+
+def list_hashtags(text: str) -> HashtagListResult:
+    """Get all unique hashtags in the document."""
+    result = parse(text)
+    ast = result.ast
+    hashtag_set: set[str] = set()
+
+    # Collect all unique hashtags from all items
+    for item in ast.items:
+        for tag in item.metadata.hashtags:
+            hashtag_set.add(tag)
+
+    # Return sorted list
+    return HashtagListResult(hashtags=sorted(hashtag_set))

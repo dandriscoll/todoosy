@@ -40,6 +40,8 @@ const PRIORITY_REGEX = /\bp(\d+)\b/gi;
 const ESTIMATE_REGEX = /\b(\d+)([mhd])\b/gi;
 const INVALID_PRIORITY_REGEX = /\bp([^0-9\s)][^\s)]*)\b/gi;
 const INVALID_ESTIMATE_REGEX = /\b(\d+)([^mhd\s)0-9][^\s)]*)\b/gi;
+const VALID_HASHTAG_REGEX = /^#[a-zA-Z][a-zA-Z0-9_-]*$/;
+const HASHTAG_LIKE_REGEX = /#[^\s,)]*/g;
 
 // Built-in progress states (normalized to lowercase)
 const PROGRESS_STATES = new Set(['done', 'deleted', 'in progress', 'blocked', 'progress']);
@@ -347,7 +349,8 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       }
 
       // Check for invalid priority tokens (e.g., pX)
-      const invalidPriorities = content.matchAll(/\bp([a-zA-Z][^\s,)]*)/gi);
+      // Use negative lookbehind to exclude hashtags (e.g., #personal)
+      const invalidPriorities = content.matchAll(/(?<!#)\bp([a-zA-Z][^\s,)]*)/gi);
       for (const ipMatch of invalidPriorities) {
         // Skip if this is "progress" (part of "in progress" progress state)
         if (ipMatch[0].toLowerCase() === 'progress') continue;
@@ -373,6 +376,22 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
             line: item.line,
             column: tokenStart - item.item_span[0] + 1,
             span: [tokenStart, tokenStart + ieMatch[0].length],
+          });
+        }
+      }
+
+      // Check for invalid hashtags (e.g., #123, #)
+      const hashtagLikeMatches = content.matchAll(HASHTAG_LIKE_REGEX);
+      for (const htMatch of hashtagLikeMatches) {
+        const hashtag = htMatch[0];
+        if (!VALID_HASHTAG_REGEX.test(hashtag)) {
+          const tokenStart = parenStart + 1 + (htMatch.index || 0);
+          warnings.push({
+            code: 'INVALID_HASHTAG',
+            message: `Invalid hashtag format: ${hashtag} (must start with # followed by a letter)`,
+            line: item.line,
+            column: tokenStart - item.item_span[0] + 1,
+            span: [tokenStart, tokenStart + hashtag.length],
           });
         }
       }
@@ -435,6 +454,67 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
           column: 1,
           span: heading.span,
         });
+      }
+    }
+  }
+
+  // Check for sequence issues (gaps and duplicates in numbered lists)
+  const itemMap = new Map<string, typeof ast.items[0]>();
+  for (const item of ast.items) {
+    itemMap.set(item.id, item);
+  }
+
+  for (const item of ast.items) {
+    if (item.children.length === 0) continue;
+
+    // Collect numbered children
+    const numberedChildren: { id: string; seqNum: number; item: typeof item }[] = [];
+    for (const childId of item.children) {
+      const child = itemMap.get(childId);
+      if (child && child.marker_type === 'numbered' && child.sequence_number !== undefined) {
+        numberedChildren.push({ id: childId, seqNum: child.sequence_number, item: child });
+      }
+    }
+
+    if (numberedChildren.length === 0) continue;
+
+    // Check for gaps - numbers should be consecutive starting from 1
+    for (let i = 0; i < numberedChildren.length; i++) {
+      const expected = i + 1;
+      const actual = numberedChildren[i].seqNum;
+      if (actual !== expected) {
+        const child = numberedChildren[i].item;
+        warnings.push({
+          code: 'SEQUENCE_GAP',
+          message: `Sequence gap: expected ${expected}, found ${actual}`,
+          line: child.line,
+          column: child.column,
+          span: child.item_span,
+        });
+      }
+    }
+
+    // Check for duplicates
+    const seqNumCounts = new Map<number, typeof numberedChildren>();
+    for (const child of numberedChildren) {
+      const existing = seqNumCounts.get(child.seqNum) || [];
+      existing.push(child);
+      seqNumCounts.set(child.seqNum, existing);
+    }
+
+    for (const [seqNum, children] of seqNumCounts) {
+      if (children.length > 1) {
+        // Warn for all but the first occurrence
+        for (let i = 1; i < children.length; i++) {
+          const child = children[i].item;
+          warnings.push({
+            code: 'SEQUENCE_DUPLICATE',
+            message: `Duplicate sequence number: ${seqNum}`,
+            line: child.line,
+            column: child.column,
+            span: child.item_span,
+          });
+        }
       }
     }
   }

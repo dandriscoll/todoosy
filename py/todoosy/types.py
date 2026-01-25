@@ -13,6 +13,8 @@ class ItemMetadata:
     priority: Optional[int] = None
     estimate_minutes: Optional[int] = None
     progress: Optional[str] = None
+    hashtags: list[str] = field(default_factory=list)           # Direct hashtags (without # prefix, lowercase)
+    effective_hashtags: list[str] = field(default_factory=list) # All hashtags including inherited from ancestors
 
 
 @dataclass
@@ -29,6 +31,8 @@ class ItemNode:
     line: int = 1
     column: int = 1
     level: Optional[int] = None  # Only for headings
+    marker_type: Optional[str] = None  # 'bullet' | 'numbered' - only for list items
+    sequence_number: Optional[int] = None  # Original number for numbered items
 
 
 @dataclass
@@ -93,7 +97,7 @@ class Settings:
 
 @dataclass
 class ParsedToken:
-    type: str  # 'due' | 'priority' | 'estimate'
+    type: str  # 'due' | 'priority' | 'estimate' | 'progress' | 'hashtag'
     value: str | int
     raw: str
     start: int

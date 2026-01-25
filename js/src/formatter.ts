@@ -43,10 +43,15 @@ function formatMetadata(metadata: ItemMetadata): string {
     }
   }
 
+  // Output direct hashtags (not effective_hashtags) at end
+  for (const tag of metadata.hashtags) {
+    parts.push(`#${tag}`);
+  }
+
   return parts.length > 0 ? `(${parts.join(' ')})` : '';
 }
 
-function formatItemLine(item: ItemNode, indent: number = 0): string {
+function formatItemLine(item: ItemNode, indent: number = 0, sequenceNum?: number): string {
   const indentStr = '  '.repeat(indent);
   const metaStr = formatMetadata(item.metadata);
   const titleWithMeta = metaStr ? `${item.title_text} ${metaStr}` : item.title_text;
@@ -54,6 +59,11 @@ function formatItemLine(item: ItemNode, indent: number = 0): string {
   if (item.type === 'heading') {
     const hashes = '#'.repeat(item.level || 1);
     return `${hashes} ${titleWithMeta}`;
+  }
+
+  // Use numbered marker if item is numbered
+  if (item.marker_type === 'numbered' && sequenceNum !== undefined) {
+    return `${indentStr}${sequenceNum}. ${titleWithMeta}`;
   }
 
   return `${indentStr}- ${titleWithMeta}`;
@@ -117,7 +127,7 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
   }
 
   // Helper to format an item and its subtree
-  function formatItem(id: string, listIndent: number = 0, isUnderMisc: boolean = false): void {
+  function formatItem(id: string, listIndent: number = 0, isUnderMisc: boolean = false, sequenceNum?: number): void {
     const item = itemMap.get(id)!;
 
     // Skip Misc section during normal iteration (we'll add it at the end)
@@ -132,7 +142,7 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
       }
     }
 
-    lines.push(formatItemLine(item, listIndent));
+    lines.push(formatItemLine(item, listIndent, sequenceNum));
 
     // Add blank line after heading before comments or children, based on style
     if (shouldAddBlankAfter(item)) {
@@ -154,14 +164,17 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
       }
     }
 
-    // Format children
+    // Format children - renumber sequenced items
+    let childSequenceNum = 1;
     for (const childId of item.children) {
       const child = itemMap.get(childId)!;
       if (child.type === 'list') {
         // List items under a heading start at indent 0
         // Nested list items increment indent
         const nextIndent = item.type === 'heading' ? 0 : listIndent + 1;
-        formatItem(childId, nextIndent, isUnderMisc);
+        // Pass sequence number for numbered items and increment
+        const childSeq = child.marker_type === 'numbered' ? childSequenceNum++ : undefined;
+        formatItem(childId, nextIndent, isUnderMisc, childSeq);
       } else {
         formatItem(childId, 0, isUnderMisc);
       }
@@ -201,10 +214,12 @@ export function format(text: string, scheme?: Scheme, filename?: string): string
         if (shouldAddBlankAfterMisc) {
           lines.push('');
         }
+        let miscChildSeqNum = 1;
         for (const childId of miscItemNode.children) {
           // Format misc children - they start at indent 0
           const child = itemMap.get(childId)!;
-          lines.push(formatItemLine(child, 0));
+          const childSeq = child.marker_type === 'numbered' ? miscChildSeqNum++ : undefined;
+          lines.push(formatItemLine(child, 0, childSeq));
           const formattedComments = formatComments(
             child.comments,
             child.type === 'list',

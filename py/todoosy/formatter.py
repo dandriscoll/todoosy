@@ -38,10 +38,14 @@ def format_metadata(metadata: ItemMetadata) -> str:
         else:
             parts.append(f"{minutes}m")
 
+    # Output direct hashtags (not effective_hashtags) at end
+    for tag in metadata.hashtags:
+        parts.append(f"#{tag}")
+
     return f"({' '.join(parts)})" if parts else ''
 
 
-def format_item_line(item: ItemNode, indent: int = 0) -> str:
+def format_item_line(item: ItemNode, indent: int = 0, sequence_num: Optional[int] = None) -> str:
     """Format a single item line."""
     indent_str = '  ' * indent
     meta_str = format_metadata(item.metadata)
@@ -50,6 +54,10 @@ def format_item_line(item: ItemNode, indent: int = 0) -> str:
     if item.type == 'heading':
         hashes = '#' * (item.level or 1)
         return f"{hashes} {title_with_meta}"
+
+    # Use numbered marker if item is numbered
+    if item.marker_type == 'numbered' and sequence_num is not None:
+        return f"{indent_str}{sequence_num}. {title_with_meta}"
 
     return f"{indent_str}- {title_with_meta}"
 
@@ -108,7 +116,7 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
             return item.level == 1
         return True  # roomy
 
-    def format_item(item_id: str, list_indent: int = 0, is_under_misc: bool = False) -> None:
+    def format_item(item_id: str, list_indent: int = 0, is_under_misc: bool = False, sequence_num: Optional[int] = None) -> None:
         item = item_map[item_id]
 
         # Skip Misc section during normal iteration
@@ -119,7 +127,7 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
         if should_add_blank_before(item) and lines and lines[-1] != '':
             lines.append('')
 
-        lines.append(format_item_line(item, list_indent))
+        lines.append(format_item_line(item, list_indent, sequence_num))
 
         # Add blank line after heading before comments or children, based on style
         if should_add_blank_after(item):
@@ -138,12 +146,17 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
             if should_add_blank_after(item):
                 lines.append('')
 
-        # Format children
+        # Format children - renumber sequenced items
+        child_sequence_num = 1
         for child_id in item.children:
             child = item_map[child_id]
             if child.type == 'list':
                 next_indent = 0 if item.type == 'heading' else list_indent + 1
-                format_item(child_id, next_indent, is_under_misc)
+                # Pass sequence number for numbered items and increment
+                child_seq = child_sequence_num if child.marker_type == 'numbered' else None
+                if child.marker_type == 'numbered':
+                    child_sequence_num += 1
+                format_item(child_id, next_indent, is_under_misc, child_seq)
             else:
                 format_item(child_id, 0, is_under_misc)
 
@@ -173,9 +186,13 @@ def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] =
             if misc_item.children:
                 if should_add_blank_after_misc:
                     lines.append('')
+                misc_child_seq_num = 1
                 for child_id in misc_item.children:
                     child = item_map[child_id]
-                    lines.append(format_item_line(child, 0))
+                    child_seq = misc_child_seq_num if child.marker_type == 'numbered' else None
+                    if child.marker_type == 'numbered':
+                        misc_child_seq_num += 1
+                    lines.append(format_item_line(child, 0, child_seq))
                     formatted_comments = format_comments(
                         child.comments,
                         child.type == 'list',

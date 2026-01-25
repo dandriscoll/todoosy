@@ -1,0 +1,268 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work (#work)",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "work"
+        ],
+        "effective_hashtags": [
+          "work"
+        ]
+      },
+      "comments": [],
+      "children": [
+        "1",
+        "2",
+        "4"
+      ],
+      "item_span": [
+        0,
+        14
+      ],
+      "subtree_span": [
+        0,
+        128
+      ],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Task with hashtag (#urgent)",
+      "title_text": "Task with hashtag",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "urgent"
+        ],
+        "effective_hashtags": [
+          "urgent",
+          "work"
+        ]
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        16,
+        45
+      ],
+      "subtree_span": [
+        16,
+        45
+      ],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Task without hashtag",
+      "title_text": "Task without hashtag",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": [
+          "work"
+        ]
+      },
+      "comments": [],
+      "children": [
+        "3"
+      ],
+      "item_span": [
+        46,
+        68
+      ],
+      "subtree_span": [
+        46,
+        95
+      ],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "  - Nested task (#feature)",
+      "title_text": "Nested task",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "feature"
+        ],
+        "effective_hashtags": [
+          "feature",
+          "work"
+        ]
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        69,
+        95
+      ],
+      "subtree_span": [
+        69,
+        95
+      ],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "list",
+      "raw_line": "- Multiple tags (#backend, #api)",
+      "title_text": "Multiple tags",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "api",
+          "backend"
+        ],
+        "effective_hashtags": [
+          "api",
+          "backend",
+          "work"
+        ]
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        96,
+        128
+      ],
+      "subtree_span": [
+        96,
+        128
+      ],
+      "line": 6,
+      "column": 1
+    },
+    {
+      "id": "5",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Personal (#personal)",
+      "title_text": "Personal",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "personal"
+        ],
+        "effective_hashtags": [
+          "personal"
+        ]
+      },
+      "comments": [],
+      "children": [
+        "6"
+      ],
+      "item_span": [
+        130,
+        152
+      ],
+      "subtree_span": [
+        130,
+        178
+      ],
+      "line": 8,
+      "column": 1
+    },
+    {
+      "id": "6",
+      "type": "list",
+      "raw_line": "- Hobby project (#hobby)",
+      "title_text": "Hobby project",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "hobby"
+        ],
+        "effective_hashtags": [
+          "hobby",
+          "personal"
+        ]
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        154,
+        178
+      ],
+      "subtree_span": [
+        154,
+        178
+      ],
+      "line": 10,
+      "column": 1
+    },
+    {
+      "id": "7",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        180,
+        186
+      ],
+      "subtree_span": [
+        180,
+        186
+      ],
+      "line": 12,
+      "column": 1
+    }
+  ],
+  "root_ids": [
+    "0",
+    "5",
+    "7"
+  ]
+}

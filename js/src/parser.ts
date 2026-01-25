@@ -11,6 +11,7 @@ const DUE_US_REGEX = /^due\s+(\d{1,2})\/(\d{1,2})\/(\d{4})$/i;
 const DUE_US_SHORT_REGEX = /^due\s+(\d{1,2})\/(\d{1,2})\/(\d{2})$/i;
 const PRIORITY_REGEX = /^p(\d+)$/i;
 const ESTIMATE_REGEX = /^(\d+)([mhd])$/i;
+const HASHTAG_REGEX = /^#([a-zA-Z][a-zA-Z0-9_-]*)$/;
 
 const MONTH_NAMES: Record<string, number> = {
   january: 1, jan: 1,
@@ -394,6 +395,19 @@ export function parseTokensInParenGroup(content: string, groupStart: number): Pa
       }
     }
 
+    // Check for hashtags
+    const hashtagMatch = part.match(HASHTAG_REGEX);
+    if (hashtagMatch) {
+      tokens.push({
+        type: 'hashtag',
+        value: hashtagMatch[1].toLowerCase(),
+        raw: part,
+        start: absoluteStart,
+        end: absoluteEnd,
+      });
+      continue;
+    }
+
     // Check for standalone dates (without "due" prefix)
     // Check for soft date prefix (~)
     let isSoftStandalone = false;
@@ -511,12 +525,17 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
     priority: null,
     estimate_minutes: null,
     progress: null,
+    hashtags: [],
+    effective_hashtags: [],
   };
 
   // Collect all tokens from all groups
   const allTokens = groups.flatMap(g => g.tokens);
 
-  // Last occurrence wins
+  // Collect unique hashtags (sorted alphabetically)
+  const hashtagSet = new Set<string>();
+
+  // Last occurrence wins for non-hashtag tokens
   for (const token of allTokens) {
     switch (token.type) {
       case 'due':
@@ -532,8 +551,14 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
       case 'progress':
         metadata.progress = token.value as string;
         break;
+      case 'hashtag':
+        hashtagSet.add(token.value as string);
+        break;
     }
   }
+
+  // Store sorted unique hashtags
+  metadata.hashtags = [...hashtagSet].sort();
 
   return metadata;
 }
@@ -609,10 +634,17 @@ export function parse(text: string): ParseResult {
       const titleText = buildTitleText(content, groups);
       const metadata = buildMetadata(groups);
 
+      // Determine marker type and sequence number
+      const isNumbered = /^\d+\.$/.test(marker);
+      const markerType: 'bullet' | 'numbered' = isNumbered ? 'numbered' : 'bullet';
+      const sequenceNumber = isNumbered ? parseInt(marker.slice(0, -1), 10) : undefined;
+
       const id = String(nextId++);
       const item: ItemNode = {
         id,
         type: 'list',
+        marker_type: markerType,
+        sequence_number: sequenceNumber,
         raw_line: line,
         title_text: titleText,
         metadata,
@@ -732,6 +764,22 @@ export function parse(text: string): ParseResult {
       return !items.some(other => other.children.includes(item.id));
     })
     .map(item => item.id);
+
+  // Compute effective_hashtags through inheritance (pre-order traversal)
+  function computeEffectiveHashtags(id: string, parentEffectiveHashtags: string[]): void {
+    const item = items.find(i => i.id === id)!;
+    // Merge parent's effective_hashtags with own hashtags, deduplicate and sort
+    const combined = new Set([...parentEffectiveHashtags, ...item.metadata.hashtags]);
+    item.metadata.effective_hashtags = [...combined].sort();
+
+    for (const childId of item.children) {
+      computeEffectiveHashtags(childId, item.metadata.effective_hashtags);
+    }
+  }
+
+  for (const rootId of actualRootIds) {
+    computeEffectiveHashtags(rootId, []);
+  }
 
   return {
     ast: {

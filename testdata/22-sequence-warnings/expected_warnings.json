@@ -1,0 +1,32 @@
+{
+  "warnings": [
+    {
+      "code": "SEQUENCE_GAP",
+      "message": "Sequence gap: expected 3, found 4",
+      "line": 5,
+      "column": 1,
+      "span": [51, 71]
+    },
+    {
+      "code": "SEQUENCE_GAP",
+      "message": "Sequence gap: expected 2, found 1",
+      "line": 10,
+      "column": 1,
+      "span": [115, 133]
+    },
+    {
+      "code": "SEQUENCE_GAP",
+      "message": "Sequence gap: expected 3, found 2",
+      "line": 11,
+      "column": 1,
+      "span": [134, 148]
+    },
+    {
+      "code": "SEQUENCE_DUPLICATE",
+      "message": "Duplicate sequence number: 1",
+      "line": 10,
+      "column": 1,
+      "span": [115, 133]
+    }
+  ]
+}

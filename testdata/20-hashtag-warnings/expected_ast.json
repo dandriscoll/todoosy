@@ -1,0 +1,153 @@
+{
+  "items": [
+    {
+      "id": "0",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Work",
+      "title_text": "Work",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [
+        "1",
+        "2",
+        "3"
+      ],
+      "item_span": [
+        0,
+        6
+      ],
+      "subtree_span": [
+        0,
+        83
+      ],
+      "line": 1,
+      "column": 1
+    },
+    {
+      "id": "1",
+      "type": "list",
+      "raw_line": "- Invalid numeric start (#123)",
+      "title_text": "Invalid numeric start (#123)",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        8,
+        38
+      ],
+      "subtree_span": [
+        8,
+        38
+      ],
+      "line": 3,
+      "column": 1
+    },
+    {
+      "id": "2",
+      "type": "list",
+      "raw_line": "- Empty hashtag (#)",
+      "title_text": "Empty hashtag (#)",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        39,
+        58
+      ],
+      "subtree_span": [
+        39,
+        58
+      ],
+      "line": 4,
+      "column": 1
+    },
+    {
+      "id": "3",
+      "type": "list",
+      "raw_line": "- Valid hashtag (#valid)",
+      "title_text": "Valid hashtag",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [
+          "valid"
+        ],
+        "effective_hashtags": [
+          "valid"
+        ]
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        59,
+        83
+      ],
+      "subtree_span": [
+        59,
+        83
+      ],
+      "line": 5,
+      "column": 1
+    },
+    {
+      "id": "4",
+      "type": "heading",
+      "level": 1,
+      "raw_line": "# Misc",
+      "title_text": "Misc",
+      "metadata": {
+        "due": null,
+        "due_soft": null,
+        "priority": null,
+        "estimate_minutes": null,
+        "progress": null,
+        "hashtags": [],
+        "effective_hashtags": []
+      },
+      "comments": [],
+      "children": [],
+      "item_span": [
+        85,
+        91
+      ],
+      "subtree_span": [
+        85,
+        91
+      ],
+      "line": 7,
+      "column": 1
+    }
+  ],
+  "root_ids": [
+    "0",
+    "4"
+  ]
+}
