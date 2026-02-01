@@ -3,6 +3,7 @@ title: "Todoosy"
 summary: "Markdown-based todo system with parser, linter, and query engine."
 shipped: 2026-01-12
 tags: [markdown, todo, typescript, python, parser]
+theme: default
 icon: todoosy-icon.png
 links:
   - label: "Try It"
