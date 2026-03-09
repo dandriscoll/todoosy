@@ -54,7 +54,7 @@ from typing import Union
 from .types import Settings, Scheme, SettingValue
 
 # Heading pattern
-HEADING_REGEX = re.compile(r'^#\s+(.+?)\s*$')
+HEADING_REGEX = re.compile(r'^#{1,6}\s+(.+?)\s*$')
 
 # Known settings mapping (normalized name -> field name)
 KNOWN_SETTINGS = {

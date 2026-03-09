@@ -55,7 +55,7 @@
 import type { Settings, SettingValue, Scheme } from './types.js';
 
 // Heading patterns for known settings
-const HEADING_REGEX = /^#\s+(.+?)\s*$/;
+const HEADING_REGEX = /^#{1,6}\s+(.+?)\s*$/;
 const KNOWN_SETTINGS: Record<string, string> = {
   timezone: 'timezone',
   priorities: 'priorities',
