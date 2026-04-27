@@ -1,6 +1,6 @@
 {
   "name": "todoosy",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Todoosy - Markdown-based todo system parser, formatter, linter, and query engine",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
