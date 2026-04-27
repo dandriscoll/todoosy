@@ -4,6 +4,7 @@ Todoosy Linter
 
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional
 
 from .parser import parse
@@ -83,9 +84,10 @@ def is_valid_date(date_str: str) -> bool:
     return False
 
 
-def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None) -> LintResult:
+def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None,
+         *, now: Optional['datetime'] = None, settings: Optional[Settings] = None) -> LintResult:
     """Lint a todoosy document."""
-    result = parse(text)
+    result = parse(text, now=now, settings=settings)
     ast = result.ast
     warnings: list[Warning] = []
     lines = text.split('\n')
@@ -102,6 +104,13 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
     # Check each item
     for item in ast.items:
         raw_line = item.raw_line
+        # If the parser already recognized a due date for this item, the
+        # regex-based date-format validators below will see input shapes the
+        # parser knows about (today/tomorrow keywords, relative offsets,
+        # `start~end` spans) and may flag them as malformed. Trust the parser
+        # and suppress those format-failure warnings — duplicate detection
+        # still runs.
+        skip_date_format_checks = item.metadata.due is not None
 
         # Check for Misc section (only relevant for the misc file)
         if is_misc_file and item.type == 'heading':
@@ -133,7 +142,7 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
             for text_due_match in text_due_pattern.finditer(content):
                 text_due_indices.add(text_due_match.start())
                 date_str = text_due_match.group(1)
-                if not is_valid_date(date_str):
+                if not is_valid_date(date_str) and not skip_date_format_checks:
                     token_start = paren_start + 1 + text_due_match.start()
                     warnings.append(Warning(
                         code='INVALID_DATE_FORMAT',
@@ -145,7 +154,7 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
             for text_due_match in text_due_day_first_pattern.finditer(content):
                 text_due_indices.add(text_due_match.start())
                 date_str = text_due_match.group(1)
-                if not is_valid_date(date_str):
+                if not is_valid_date(date_str) and not skip_date_format_checks:
                     token_start = paren_start + 1 + text_due_match.start()
                     warnings.append(Warning(
                         code='INVALID_DATE_FORMAT',
@@ -172,7 +181,7 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                 if re.match(r'^~?\d{1,2}$', date_str):
                     continue
 
-                if not is_valid_date(date_str):
+                if not is_valid_date(date_str) and not skip_date_format_checks:
                     token_start = paren_start + 1 + due_match.start()
                     warnings.append(Warning(
                         code='INVALID_DATE_FORMAT',
@@ -182,45 +191,41 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
                         span=(token_start + 4, token_start + 4 + len(date_str)),
                     ))
 
-            # Check for multiple due dates
+            # Check for multiple due dates. Span syntax (`start~end`) legitimately
+            # contains two dates; skip duplicate detection for span items.
             all_due_dates: list[tuple[str, tuple[int, int]]] = []
-            for p_match in paren_pattern.finditer(raw_line):
-                p_content = p_match.group(1)
-                p_start = item.item_span[0] + p_match.start()
+            if item.metadata.due_start is None:
+                for p_match in paren_pattern.finditer(raw_line):
+                    p_content = p_match.group(1)
+                    p_start = item.item_span[0] + p_match.start()
 
-                # Check text dates first (month-first)
-                text_due_positions: set[int] = set()
-                for tdm in text_due_pattern.finditer(p_content):
-                    ds = tdm.group(1)
-                    if is_valid_date(ds):
-                        text_due_positions.add(tdm.start())
-                        d_start = p_start + 1 + tdm.start()
-                        all_due_dates.append((ds, (d_start, d_start + len(tdm.group(0)))))
+                    text_due_positions: set[int] = set()
+                    for tdm in text_due_pattern.finditer(p_content):
+                        ds = tdm.group(1)
+                        if is_valid_date(ds):
+                            text_due_positions.add(tdm.start())
+                            d_start = p_start + 1 + tdm.start()
+                            all_due_dates.append((ds, (d_start, d_start + len(tdm.group(0)))))
 
-                # Check day-first text dates
-                for tdm in text_due_day_first_pattern.finditer(p_content):
-                    ds = tdm.group(1)
-                    if is_valid_date(ds):
-                        text_due_positions.add(tdm.start())
-                        d_start = p_start + 1 + tdm.start()
-                        all_due_dates.append((ds, (d_start, d_start + len(tdm.group(0)))))
+                    for tdm in text_due_day_first_pattern.finditer(p_content):
+                        ds = tdm.group(1)
+                        if is_valid_date(ds):
+                            text_due_positions.add(tdm.start())
+                            d_start = p_start + 1 + tdm.start()
+                            all_due_dates.append((ds, (d_start, d_start + len(tdm.group(0)))))
 
-                # Check standard dates
-                for dm in due_pattern.finditer(p_content):
-                    # Skip if already matched as text date
-                    if dm.start() in text_due_positions:
-                        continue
-                    ds = dm.group(1)
-                    # Skip if it's a month name (part of text date, with or without ~)
-                    stripped_ds = ds[1:] if ds.startswith('~') else ds
-                    if stripped_ds.lower() in MONTH_NAMES:
-                        continue
-                    # Skip if it's a day number (part of day-first text date, with or without ~)
-                    if re.match(r'^~?\d{1,2}$', ds):
-                        continue
-                    if is_valid_date(ds):
-                        d_start = p_start + 1 + dm.start()
-                        all_due_dates.append((ds, (d_start, d_start + len(dm.group(0)))))
+                    for dm in due_pattern.finditer(p_content):
+                        if dm.start() in text_due_positions:
+                            continue
+                        ds = dm.group(1)
+                        stripped_ds = ds[1:] if ds.startswith('~') else ds
+                        if stripped_ds.lower() in MONTH_NAMES:
+                            continue
+                        if re.match(r'^~?\d{1,2}$', ds):
+                            continue
+                        if is_valid_date(ds):
+                            d_start = p_start + 1 + dm.start()
+                            all_due_dates.append((ds, (d_start, d_start + len(dm.group(0)))))
 
             if len(all_due_dates) > 1:
                 for i in range(1, len(all_due_dates)):
@@ -253,7 +258,8 @@ def lint(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = N
             invalid_estimate_pattern = re.compile(r'\b(\d+)([a-zA-Z])(?![mhdMHD])\b', re.IGNORECASE)
             for ie_match in invalid_estimate_pattern.finditer(content):
                 unit = ie_match.group(2).lower()
-                if unit not in ('m', 'h', 'd'):
+                # Allow `w`/`y` (relative-date single-letter units) alongside m/h/d.
+                if unit not in ('m', 'h', 'd', 'w', 'y'):
                     token_start = paren_start + 1 + ie_match.start()
                     warnings.append(Warning(
                         code='INVALID_TOKEN',

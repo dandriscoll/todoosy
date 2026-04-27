@@ -2,9 +2,10 @@
 Todoosy Formatter
 """
 
+from datetime import datetime
 from typing import Optional
 from .parser import parse
-from .types import ItemNode, ItemMetadata, Scheme
+from .types import ItemNode, ItemMetadata, Scheme, Settings
 
 
 def parse_misc_location(misc: str) -> tuple[str, str]:
@@ -20,8 +21,13 @@ def format_metadata(metadata: ItemMetadata) -> str:
     parts: list[str] = []
 
     if metadata.due:
-        soft_prefix = '~' if metadata.due_soft else ''
-        parts.append(f"due {soft_prefix}{metadata.due}")
+        if metadata.due_start:
+            # Span form: `due start~end`. The `~` between dates carries the soft semantics;
+            # a leading `~` is never used in conjunction with a span.
+            parts.append(f"due {metadata.due_start}~{metadata.due}")
+        else:
+            soft_prefix = '~' if metadata.due_soft else ''
+            parts.append(f"due {soft_prefix}{metadata.due}")
 
     if metadata.progress:
         parts.append(metadata.progress)
@@ -74,9 +80,10 @@ def format_comments(comments: list[str], is_list_item: bool, indent: int) -> lis
     return list(comments)
 
 
-def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None) -> str:
+def format(text: str, scheme: Optional[Scheme] = None, filename: Optional[str] = None,
+           *, now: Optional[datetime] = None, settings: Optional[Settings] = None) -> str:
     """Format a todoosy document."""
-    result = parse(text)
+    result = parse(text, now=now, settings=settings)
     ast = result.ast
     lines: list[str] = []
     item_map = {item.id: item for item in ast.items}

@@ -61,6 +61,12 @@ describe('Todoosy Golden Tests', () => {
         expect(actual.type).toBe(expected.type);
         expect(actual.title_text).toBe(expected.title_text);
         expect(actual.metadata.due).toBe(expected.metadata.due);
+        if ('due_start' in expected.metadata) {
+          expect(actual.metadata.due_start).toBe(expected.metadata.due_start);
+        }
+        if ('due_soft' in expected.metadata) {
+          expect(actual.metadata.due_soft).toBe(expected.metadata.due_soft);
+        }
         expect(actual.metadata.priority).toBe(expected.metadata.priority);
         expect(actual.metadata.estimate_minutes).toBe(expected.metadata.estimate_minutes);
         expect(actual.metadata.progress).toBe(expected.metadata.progress);
@@ -595,5 +601,160 @@ describe('extractParenGroups', () => {
     expect(result).toHaveLength(2);
     expect(result[0].content).toBe('p1');
     expect(result[1].content).toBe('2h');
+  });
+});
+
+describe('Today/tomorrow keyword resolution', () => {
+  // 2026-04-27 is a Monday. Anchored UTC instant.
+  const fixedNow = new Date('2026-04-27T12:00:00Z');
+
+  test('today resolves after due', () => {
+    const { ast } = parse('- Task (due today)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-04-27');
+    expect(ast.items[0].metadata.due_soft).toBeNull();
+  });
+
+  test('tomorrow resolves after due', () => {
+    const { ast } = parse('- Task (due tomorrow)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-04-28');
+  });
+
+  test('soft tomorrow resolves with prefix', () => {
+    const { ast } = parse('- Task (~tomorrow)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-04-28');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('today is case-insensitive', () => {
+    const { ast } = parse('- Task (TODAY)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-04-27');
+  });
+
+  test('formatter emits concrete dates, never keywords', () => {
+    const out = format('- Task (due today)\n# Misc\n', undefined, undefined, { now: fixedNow });
+    expect(out).toContain('due 2026-04-27');
+    expect(out).not.toContain('today');
+  });
+});
+
+describe('Relative-date offsets', () => {
+  const fixedNow = new Date('2026-04-27T12:00:00Z');
+
+  test('digit + week short form', () => {
+    const { ast } = parse('- Task (due 2w)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-05-11');
+  });
+
+  test('digit + days long form', () => {
+    const { ast } = parse('- Task (due 3 days)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-04-30');
+  });
+
+  test('"in" prefix is optional', () => {
+    const a = parse('- A (due in 2 weeks)\n# Misc\n', { now: fixedNow });
+    const b = parse('- B (due 2 weeks)\n# Misc\n', { now: fixedNow });
+    expect(a.ast.items[0].metadata.due).toBe(b.ast.items[0].metadata.due);
+  });
+
+  test('"from now" suffix is optional', () => {
+    const a = parse('- A (due 2 weeks from now)\n# Misc\n', { now: fixedNow });
+    const b = parse('- B (due 2 weeks)\n# Misc\n', { now: fixedNow });
+    expect(a.ast.items[0].metadata.due).toBe(b.ast.items[0].metadata.due);
+  });
+
+  test('number-words 1-31', () => {
+    const { ast: a } = parse('- A (due in two weeks)\n# Misc\n', { now: fixedNow });
+    expect(a.items[0].metadata.due).toBe('2026-05-11');
+    const { ast: b } = parse('- B (due in twenty-one days)\n# Misc\n', { now: fixedNow });
+    expect(b.items[0].metadata.due).toBe('2026-05-18');
+    const { ast: c } = parse('- C (due in thirty-one days)\n# Misc\n', { now: fixedNow });
+    expect(c.items[0].metadata.due).toBe('2026-05-28');
+  });
+
+  test('compound number-word "twenty one" with space', () => {
+    const { ast } = parse('- Task (due in twenty one days)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBe('2026-05-18');
+  });
+
+  test('months are calendar-aware (Jan 31 + 1 month clips to Feb 28/29)', () => {
+    const jan31 = new Date('2026-01-31T12:00:00Z');
+    const { ast } = parse('- Task (due in 1 month)\n# Misc\n', { now: jan31 });
+    expect(ast.items[0].metadata.due).toBe('2026-02-28');
+  });
+
+  test('bare 2d remains an estimate, not a relative date', () => {
+    const { ast } = parse('- Task (2d)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due).toBeNull();
+    expect(ast.items[0].metadata.estimate_minutes).toBe(960); // 2 * 480
+  });
+
+  test('"in progress" still parses as progress, not relative date', () => {
+    const { ast } = parse('- Task (in progress)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.progress).toBe('in progress');
+    expect(ast.items[0].metadata.due).toBeNull();
+  });
+});
+
+describe('Window span syntax', () => {
+  const fixedNow = new Date('2026-04-27T12:00:00Z');
+
+  test('ISO span standalone', () => {
+    const { ast } = parse('- Task (2026-04-24~2026-05-08)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due_start).toBe('2026-04-24');
+    expect(ast.items[0].metadata.due).toBe('2026-05-08');
+    expect(ast.items[0].metadata.due_soft).toBe(true);
+  });
+
+  test('ISO span after due', () => {
+    const { ast } = parse('- Task (due 2026-04-24~2026-05-08)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due_start).toBe('2026-04-24');
+    expect(ast.items[0].metadata.due).toBe('2026-05-08');
+  });
+
+  test('keyword + relative span', () => {
+    const { ast } = parse('- Task (today~2w)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due_start).toBe('2026-04-27');
+    expect(ast.items[0].metadata.due).toBe('2026-05-11');
+  });
+
+  test('text-date span', () => {
+    const { ast } = parse('- Task (Apr 24 2026~May 8 2026)\n# Misc\n', { now: fixedNow });
+    expect(ast.items[0].metadata.due_start).toBe('2026-04-24');
+    expect(ast.items[0].metadata.due).toBe('2026-05-08');
+  });
+
+  test('formatter emits start~end form', () => {
+    const out = format('- Task (Apr 24 2026~May 8 2026)\n# Misc\n', undefined, undefined, { now: fixedNow });
+    expect(out).toContain('due 2026-04-24~2026-05-08');
+  });
+
+  test('queryUpcoming sorts spans by due_start', () => {
+    const text = '# Tasks\n- Span (2026-05-01~2026-06-01)\n- Hard (due 2026-05-15)\n# Misc\n';
+    const result = queryUpcoming(text, undefined, { now: fixedNow });
+    // Span starts 2026-05-01, hard is 2026-05-15. Span should sort first.
+    expect(result.items[0].id).toBe(ast0Id(text));
+    function ast0Id(t: string) { return parse(t).ast.items[1].id; }
+  });
+});
+
+describe('Timezone-aware "today"', () => {
+  test('settings timezone affects today resolution', () => {
+    // Same UTC instant: 2026-04-27 23:00 UTC. In America/Los_Angeles that's still 2026-04-27 16:00.
+    // In Asia/Tokyo it's 2026-04-28 08:00.
+    const instant = new Date('2026-04-27T23:00:00Z');
+    const settingsLA = { timezone: 'America/Los_Angeles', priorities: {}, misc: 'todoosy.md/Misc', calendar_format: 'yyyy-mm-dd', formatting_style: 'roomy', extended: {} };
+    const settingsTokyo = { timezone: 'Asia/Tokyo', priorities: {}, misc: 'todoosy.md/Misc', calendar_format: 'yyyy-mm-dd', formatting_style: 'roomy', extended: {} };
+
+    const a = parse('- Task (due today)\n# Misc\n', { now: instant, settings: settingsLA });
+    const b = parse('- Task (due today)\n# Misc\n', { now: instant, settings: settingsTokyo });
+
+    expect(a.ast.items[0].metadata.due).toBe('2026-04-27');
+    expect(b.ast.items[0].metadata.due).toBe('2026-04-28');
+  });
+
+  test('UTC default when no timezone setting', () => {
+    const instant = new Date('2026-04-27T23:30:00Z');
+    const { ast } = parse('- Task (due today)\n# Misc\n', { now: instant });
+    expect(ast.items[0].metadata.due).toBe('2026-04-27');
   });
 });

@@ -9,6 +9,7 @@ from typing import Optional
 @dataclass
 class ItemMetadata:
     due: Optional[str] = None
+    due_start: Optional[str] = None  # Start of a date span. Non-null only when input was `start~end`.
     due_soft: Optional[bool] = None
     priority: Optional[int] = None
     estimate_minutes: Optional[int] = None
@@ -102,7 +103,8 @@ class ParsedToken:
     raw: str
     start: int
     end: int
-    soft: Optional[bool] = None  # Only for 'due' tokens - indicates a soft/flexible date
+    soft: Optional[bool] = None       # Only for 'due' tokens - indicates a soft/flexible date
+    date_start: Optional[str] = None  # Only for 'due' tokens - non-null when source was `start~end`
 
 
 @dataclass

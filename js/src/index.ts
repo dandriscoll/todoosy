@@ -3,7 +3,9 @@
  */
 
 export { parse, parseTokensInParenGroup, extractParenGroups } from './parser.js';
-export type { ParseResult } from './parser.js';
+export type { ParseResult, ParseOptions } from './parser.js';
+export { resolveNow, resolveKeyword, tryParseRelative } from './relative-date.js';
+export type { ResolvedNow } from './relative-date.js';
 
 export { format } from './formatter.js';
 export { lint } from './linter.js';

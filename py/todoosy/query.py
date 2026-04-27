@@ -3,10 +3,11 @@ Todoosy Query Engine
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional
 
 from .parser import parse
-from .types import AST, ItemNode, UpcomingItem, MiscItem, Scheme
+from .types import AST, ItemNode, UpcomingItem, MiscItem, Scheme, Settings
 
 
 @dataclass
@@ -40,11 +41,17 @@ def build_path(item_id: str, ast: AST) -> str:
     return ' > '.join(parts)
 
 
-def query_upcoming(text: str, scheme: Optional[Scheme] = None) -> UpcomingResult:
-    """Get all items with due dates, sorted by date and priority."""
-    result = parse(text)
+def query_upcoming(text: str, scheme: Optional[Scheme] = None,
+                   *, now: Optional[datetime] = None, settings: Optional[Settings] = None) -> UpcomingResult:
+    """Get all items with due dates, sorted by date and priority.
+
+    Span items (with `due_start`) sort by `due_start ?? due` so a window
+    surfaces when it starts mattering, not when it ends.
+    """
+    result = parse(text, now=now, settings=settings)
     ast = result.ast
     items: list[UpcomingItem] = []
+    sort_anchor: dict[str, str] = {}
 
     for item in ast.items:
         if item.metadata.due:
@@ -55,8 +62,8 @@ def query_upcoming(text: str, scheme: Optional[Scheme] = None) -> UpcomingResult
                 path=build_path(item.id, ast),
                 item_span=item.item_span,
             )
+            sort_anchor[item.id] = item.metadata.due_start or item.metadata.due
 
-            # Add priority label if scheme is provided
             if scheme and item.metadata.priority is not None:
                 label = scheme.priorities.get(str(item.metadata.priority))
                 if label:
@@ -64,16 +71,11 @@ def query_upcoming(text: str, scheme: Optional[Scheme] = None) -> UpcomingResult
 
             items.append(upcoming_item)
 
-    # Sort by:
-    # 1. Due date ascending
-    # 2. Priority ascending (lower is higher priority, None treated as infinity)
-    # 3. Document order
     def sort_key(item: UpcomingItem) -> tuple:
         priority = item.priority if item.priority is not None else float('inf')
-        return (item.due, priority, item.item_span[0])
+        return (sort_anchor[item.id], priority, item.item_span[0])
 
     items.sort(key=sort_key)
-
     return UpcomingResult(items=items)
 
 

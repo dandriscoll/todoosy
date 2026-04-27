@@ -2,7 +2,7 @@
  * Todoosy Linter
  */
 
-import { parse } from './parser.js';
+import { parse, type ParseOptions } from './parser.js';
 import type { Warning, LintResult, Scheme } from './types.js';
 
 const VALID_DATE_FORMATS = [
@@ -84,8 +84,8 @@ function parseMiscLocation(misc: string): { filename: string; heading: string } 
   };
 }
 
-export function lint(text: string, scheme?: Scheme, filename?: string): LintResult {
-  const { ast } = parse(text);
+export function lint(text: string, scheme?: Scheme, filename?: string, options?: ParseOptions): LintResult {
+  const { ast } = parse(text, options);
   const warnings: Warning[] = [];
   const lines = text.split('\n');
 
@@ -114,6 +114,13 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       }
     }
 
+    // If the parser already recognized a due date for this item, skip the
+    // regex-based date-format validation entirely. The parser accepts a
+    // richer surface than these regexes know about (today/tomorrow keywords,
+    // relative offsets like "in 2 weeks", spans like `start~end`); trusting
+    // the parser is both more correct and avoids divergence between the two.
+    const skipDateFormatChecks = item.metadata.due !== null;
+
     // Check for invalid date formats in parentheses
     const parenMatches = rawLine.matchAll(/\(([^)]+)\)/g);
     for (const match of parenMatches) {
@@ -127,7 +134,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       for (const textDueMatch of textDueMatches) {
         textDueIndices.add(textDueMatch.index || 0);
         const dateStr = textDueMatch[1];
-        if (!isValidDate(dateStr)) {
+        if (!isValidDate(dateStr) && !skipDateFormatChecks) {
           const tokenStart = parenStart + 1 + (textDueMatch.index || 0);
           warnings.push({
             code: 'INVALID_DATE_FORMAT',
@@ -144,7 +151,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       for (const textDueMatch of textDueDayFirstMatches) {
         textDueIndices.add(textDueMatch.index || 0);
         const dateStr = textDueMatch[1];
-        if (!isValidDate(dateStr)) {
+        if (!isValidDate(dateStr) && !skipDateFormatChecks) {
           const tokenStart = parenStart + 1 + (textDueMatch.index || 0);
           warnings.push({
             code: 'INVALID_DATE_FORMAT',
@@ -170,7 +177,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         // Skip if this looks like a day number (could be start of day-first date, with or without ~)
         if (/^~?\d{1,2}$/.test(dateStr)) continue;
 
-        if (!isValidDate(dateStr)) {
+        if (!isValidDate(dateStr) && !skipDateFormatChecks) {
           const tokenStart = parenStart + 1 + (dueMatch.index || 0);
           warnings.push({
             code: 'INVALID_DATE_FORMAT',
@@ -182,8 +189,11 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
       }
 
-      // Check for multiple due dates across all paren groups
+      // Check for multiple due dates across all paren groups.
+      // Span syntax (`start~end`) legitimately contains two ISO/text dates,
+      // so skip duplicate detection when the parser recognized a span.
       const allDueDates: { dateStr: string; span: [number, number] }[] = [];
+      if (item.metadata.due_start === null) {
       const allParenMatches = rawLine.matchAll(/\(([^)]+)\)/g);
       for (const pMatch of allParenMatches) {
         const pContent = pMatch[1];
@@ -310,6 +320,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
         }
         break; // Only warn once per item
       }
+      } // end if (item.metadata.due_start === null)
 
       // Check for standalone dates (without "due" prefix)
       // Standalone text dates: Month Day [Year] (not preceded by "due" or digit+space)
@@ -318,7 +329,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       const standaloneTextDates = content.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d\s)(~?(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)\s+\d{1,2}(?:\s+\d{2,4})?)/gi);
       for (const stdMatch of standaloneTextDates) {
         const dateStr = stdMatch[1];
-        if (!isValidDate(dateStr)) {
+        if (!isValidDate(dateStr) && !skipDateFormatChecks) {
           const tokenStart = parenStart + 1 + (stdMatch.index || 0);
           warnings.push({
             code: 'INVALID_DATE_FORMAT',
@@ -336,7 +347,7 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       const standaloneDayFirstDates = content.matchAll(/(?<!\bdue\s)(?<!\bdue\s~)(?<!\d)(~?\d{1,2}\s+(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)(?:\s+\d{2,4})?)/gi);
       for (const stdMatch of standaloneDayFirstDates) {
         const dateStr = stdMatch[1];
-        if (!isValidDate(dateStr)) {
+        if (!isValidDate(dateStr) && !skipDateFormatChecks) {
           const tokenStart = parenStart + 1 + (stdMatch.index || 0);
           warnings.push({
             code: 'INVALID_DATE_FORMAT',
@@ -368,7 +379,11 @@ export function lint(text: string, scheme?: Scheme, filename?: string): LintResu
       const invalidEstimates = content.matchAll(/\b(\d+)([a-zA-Z])(?![mhdMHD])\b/gi);
       for (const ieMatch of invalidEstimates) {
         const unit = ieMatch[2].toLowerCase();
-        if (unit !== 'm' && unit !== 'h' && unit !== 'd') {
+        // Allow relative-date single-letter units `w` (week) and `y` (year)
+        // alongside the existing estimate units m/h/d. Multi-letter forms
+        // (`2wk`, `2week`, `2years`, `2 days`, `in 2 weeks`) don't match this
+        // regex anyway because the trailing word boundary fails on extra letters.
+        if (unit !== 'm' && unit !== 'h' && unit !== 'd' && unit !== 'w' && unit !== 'y') {
           const tokenStart = parenStart + 1 + (ieMatch.index || 0);
           warnings.push({
             code: 'INVALID_TOKEN',

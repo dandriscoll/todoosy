@@ -66,6 +66,10 @@ class TestParser:
             assert actual.type == expected['type'], f"Item {i} type mismatch"
             assert actual.title_text == expected['title_text'], f"Item {i} title_text mismatch"
             assert actual.metadata.due == expected['metadata']['due'], f"Item {i} due mismatch"
+            if 'due_start' in expected['metadata']:
+                assert actual.metadata.due_start == expected['metadata']['due_start'], f"Item {i} due_start mismatch"
+            if 'due_soft' in expected['metadata']:
+                assert actual.metadata.due_soft == expected['metadata']['due_soft'], f"Item {i} due_soft mismatch"
             assert actual.metadata.priority == expected['metadata']['priority'], f"Item {i} priority mismatch"
             assert actual.metadata.estimate_minutes == expected['metadata']['estimate_minutes'], f"Item {i} estimate mismatch"
             assert actual.comments == expected['comments'], f"Item {i} comments mismatch"

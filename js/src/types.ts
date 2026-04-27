@@ -4,6 +4,7 @@
 
 export interface ItemMetadata {
   due: string | null;
+  due_start: string | null;     // Start of a date span. Non-null only when input was `start~end`.
   due_soft: boolean | null;
   priority: number | null;
   estimate_minutes: number | null;
@@ -107,7 +108,8 @@ export interface ParsedToken {
   raw: string;
   start: number;
   end: number;
-  soft?: boolean; // Only for 'due' tokens - indicates a soft/flexible date
+  soft?: boolean;       // Only for 'due' tokens - indicates a soft/flexible date
+  dateStart?: string;   // Only for 'due' tokens - non-null when source was `start~end` (this is the start ISO date).
 }
 
 export interface ParenGroup {

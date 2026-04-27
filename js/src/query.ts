@@ -2,7 +2,7 @@
  * Todoosy Query Engine
  */
 
-import { parse } from './parser.js';
+import { parse, type ParseOptions } from './parser.js';
 import type {
   AST,
   ItemNode,
@@ -38,8 +38,8 @@ function buildPath(itemId: string, ast: AST): string {
   return parts.join(' > ');
 }
 
-export function queryUpcoming(text: string, scheme?: Scheme): UpcomingResult {
-  const { ast } = parse(text);
+export function queryUpcoming(text: string, scheme?: Scheme, options?: ParseOptions): UpcomingResult {
+  const { ast } = parse(text, options);
   const items: UpcomingItem[] = [];
 
   // Find all items with due dates
@@ -65,13 +65,21 @@ export function queryUpcoming(text: string, scheme?: Scheme): UpcomingResult {
     }
   }
 
+  // Map id -> sort-anchor (due_start if present, else due). Span items sort by
+  // when they start mattering; point items sort by their date as before.
+  const sortAnchor = new Map<string, string>();
+  for (const item of ast.items) {
+    if (item.metadata.due) {
+      sortAnchor.set(item.id, item.metadata.due_start ?? item.metadata.due);
+    }
+  }
+
   // Sort by:
-  // 1. Due date ascending
+  // 1. due_start ?? due ascending (windows surface from when they start)
   // 2. Priority ascending (lower is higher priority, nulls last)
   // 3. Document order (by item_span start)
   items.sort((a, b) => {
-    // Due date comparison
-    const dateCompare = a.due.localeCompare(b.due);
+    const dateCompare = sortAnchor.get(a.id)!.localeCompare(sortAnchor.get(b.id)!);
     if (dateCompare !== 0) return dateCompare;
 
     // Priority comparison (null treated as infinity)

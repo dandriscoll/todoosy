@@ -2,7 +2,7 @@
  * Todoosy Formatter
  */
 
-import { parse } from './parser.js';
+import { parse, type ParseOptions } from './parser.js';
 import type { ItemNode, ItemMetadata, Scheme } from './types.js';
 
 function parseMiscLocation(misc: string): { filename: string; heading: string } {
@@ -20,8 +20,14 @@ function formatMetadata(metadata: ItemMetadata): string {
   const parts: string[] = [];
 
   if (metadata.due) {
-    const softPrefix = metadata.due_soft ? '~' : '';
-    parts.push(`due ${softPrefix}${metadata.due}`);
+    if (metadata.due_start) {
+      // Span form: `due start~end`. The `~` between dates carries the soft semantics;
+      // a leading `~` is never used in conjunction with a span.
+      parts.push(`due ${metadata.due_start}~${metadata.due}`);
+    } else {
+      const softPrefix = metadata.due_soft ? '~' : '';
+      parts.push(`due ${softPrefix}${metadata.due}`);
+    }
   }
 
   if (metadata.progress) {
@@ -82,8 +88,8 @@ function formatComments(comments: string[], isListItem: boolean, indent: number)
   return comments;
 }
 
-export function format(text: string, scheme?: Scheme, filename?: string): string {
-  const { ast } = parse(text);
+export function format(text: string, scheme?: Scheme, filename?: string, options?: ParseOptions): string {
+  const { ast } = parse(text, options);
   const lines: string[] = [];
   const itemMap = new Map<string, ItemNode>();
 

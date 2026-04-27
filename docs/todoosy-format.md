@@ -104,18 +104,76 @@ Due dates can be specified with or without the `due` keyword. Standalone dates (
 
 ###### Soft Dates
 
-A soft date indicates a flexible or approximate target date rather than a hard deadline. Soft dates are specified by prefixing the date with a tilde (`~`).
+A soft date indicates a flexible or approximate target rather than a hard deadline. The tilde (`~`) carries the soft semantics in two related shapes:
 
-Format: `~<date>` or `due ~<date>`
+- **Soft target (point):** `~<date>` or `due ~<date>` — a single flexible date.
+- **Soft window (span):** `<date1>~<date2>` or `due <date1>~<date2>` — a span during which the task should be on the user's radar. The end is not a hard deadline.
 
-Examples:
-- `~Jan 20` - Soft date around January 20
-- `~2026-01-20` - Soft date around January 20, 2026
-- `due ~Feb 15` - Soft date around February 15
+Format examples:
+- `~Jan 20` — soft date around January 20
+- `~2026-01-20` — soft date around January 20, 2026
+- `due ~Feb 15` — soft date around February 15
+- `2026-04-24~2026-05-08` — soft window from April 24 to May 8, 2026
+- `Apr 24 2026~May 8 2026` — same window in text form
+- `due today~2w` — span from today through two weeks (relative input; persisted as concrete dates)
 
 Parsers MUST:
-- Store a `due_soft` boolean flag set to `true` for soft dates
-- Normalize the date value the same way as non-soft dates (removing the tilde)
+- Store a `due_soft` boolean flag set to `true` whenever `~` is used in either shape
+- Store a `due_start` field carrying the start ISO date when the source was a span; otherwise `null`
+- Store the end of a span (or the single date for a point) in the existing `due` field
+- Normalize all dates to ISO 8601 internally (the persisted form on disk is always concrete dates)
+- Reject double-tilde (`~start~end`) and open-ended forms (`start~`) — these are not part of this format
+
+Span queries:
+- `queryUpcoming` MUST sort by `due_start ?? due` so a span surfaces from when it starts mattering, not when it ends.
+
+###### Today / Tomorrow Keywords
+
+The keywords `today` and `tomorrow` (case-insensitive) are accepted anywhere a date is accepted (after `due`, after `~`, in either side of a span, or standalone).
+
+Resolution happens at parse time using the user's configured `# Timezone` (Section 7.2), or UTC if no timezone is set. The keyword never appears in formatted output — the resolved concrete date is what the formatter emits and what is persisted on disk.
+
+Examples (assuming today is 2026-04-27 in the user's timezone):
+- `(due today)` → stored as `due 2026-04-27`
+- `(~tomorrow)` → stored as `due ~2026-04-28`
+- `(today~2w)` → stored as `due 2026-04-27~2026-05-11`
+
+###### Relative Date Offsets
+
+Date inputs may be expressed as relative offsets from "now". Like the keywords, these resolve at parse time to concrete ISO dates.
+
+Grammar (case-insensitive):
+
+```
+RelativeDate := ["in"] Count Unit ["from now" | "from today"]
+              | ["in"] FusedOffset                    (e.g. 2w, 2years)
+
+Count        := Digits | NumberWord
+NumberWord   := one … twelve … twenty-one … thirty-one
+                (1–31; both "twenty-one" and "twenty one" accepted)
+
+Unit         := DayUnit | WeekUnit | MonthUnit | YearUnit
+DayUnit      := "day" | "days"          (bare "d" rejected — it's an estimate)
+WeekUnit     := "w" | "wk" | "wks" | "week" | "weeks"
+MonthUnit    := "month" | "months"      (no "m" or "mo" — "m" is the minutes-estimate)
+YearUnit     := "y" | "yr" | "yrs" | "year" | "years"
+
+FusedOffset  := \d+(w|wk|wks|week|weeks|y|yr|yrs|year|years)
+                (fused day-form rejected; bare 2d/2h/2m remain estimates)
+```
+
+Examples (assuming today is 2026-04-27):
+- `(due 2w)` → `due 2026-05-11`
+- `(due in 2 weeks)` → `due 2026-05-11`
+- `(due 2 weeks from now)` → `due 2026-05-11`
+- `(due in two weeks)` → `due 2026-05-11`
+- `(due in twenty-one days)` → `due 2026-05-18`
+- `(due in 1 month)` → `due 2026-05-27`
+- `(due in 1 year)` → `due 2027-04-27`
+
+Month and year arithmetic is **calendar-aware** — `Jan 31 + 1 month = Feb 28/29` (clipped), not `+30 days`.
+
+The day-form unit collision: bare `2d`, `2h`, `2m` are time **estimates** (Section "Estimate"), not relative dates. To express "two days from now" use the long form `2 days` or `in 2 days` or `2 days from now`. The unambiguous short forms `2w`, `2y` are accepted as relative offsets.
 
 Accepted date formats:
 | Format | Example | Notes |

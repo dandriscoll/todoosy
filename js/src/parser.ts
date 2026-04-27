@@ -2,13 +2,11 @@
  * Todoosy Parser
  */
 
-import type { AST, ItemNode, ItemMetadata, ParsedToken, ParenGroup, Warning } from './types.js';
+import type { AST, ItemNode, ItemMetadata, ParsedToken, ParenGroup, Warning, Settings } from './types.js';
+import { resolveNow, resolveKeyword, tryParseRelative, type ResolvedNow } from './relative-date.js';
 
 const HEADING_REGEX = /^(#{1,6})\s+(.*)$/;
 const LIST_ITEM_REGEX = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
-const DUE_ISO_REGEX = /^due\s+(\d{4})-(\d{2})-(\d{2})$/i;
-const DUE_US_REGEX = /^due\s+(\d{1,2})\/(\d{1,2})\/(\d{4})$/i;
-const DUE_US_SHORT_REGEX = /^due\s+(\d{1,2})\/(\d{1,2})\/(\d{2})$/i;
 const PRIORITY_REGEX = /^p(\d+)$/i;
 const ESTIMATE_REGEX = /^(\d+)([mhd])$/i;
 const HASHTAG_REGEX = /^#([a-zA-Z][a-zA-Z0-9_-]*)$/;
@@ -31,41 +29,37 @@ const MONTH_NAMES: Record<string, number> = {
 // Built-in progress states (normalized to lowercase)
 const PROGRESS_STATES = new Set(['done', 'deleted', 'in progress', 'blocked']);
 
+export interface ParseOptions {
+  /** Override "now" for deterministic tests. */
+  now?: Date;
+  /** Settings (timezone) used when resolving relative dates. */
+  settings?: Settings;
+}
+
 export interface ParseResult {
   ast: AST;
   warnings: Warning[];
 }
 
-function inferYear(month: number, day: number): number {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const currentDay = now.getDate();
-
-  // Calculate months difference
-  let monthsDiff = (currentMonth - month) + (currentDay > day ? 0 : 0);
-  if (currentMonth > month || (currentMonth === month && currentDay > day)) {
-    monthsDiff = (currentMonth - month) + (currentDay > day ? 0 : -1);
-    // More precise: is the date more than 3 months in the past?
-    const candidateDate = new Date(currentYear, month - 1, day);
-    const threeMonthsAgo = new Date(now);
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    if (candidateDate < threeMonthsAgo) {
-      return currentYear + 1;
-    }
+function inferYear(month: number, day: number, now: ResolvedNow): number {
+  const [todayY, todayM, todayD] = now.todayIso.split('-').map(n => parseInt(n, 10));
+  const candidate = new Date(Date.UTC(todayY, month - 1, day));
+  // Three months ago in UTC
+  const threeMonthsAgo = new Date(Date.UTC(todayY, todayM - 1 - 3, todayD));
+  if (candidate < threeMonthsAgo) {
+    return todayY + 1;
   }
-  return currentYear;
+  return todayY;
 }
 
-function parseDate(dateStr: string): { date: string | null; valid: boolean; raw: string } {
+function parseISODate(dateStr: string): string | null {
   // ISO format: YYYY-MM-DD or YYYY-M-D
   const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (isoMatch) {
     const year = isoMatch[1];
     const month = isoMatch[2].padStart(2, '0');
     const day = isoMatch[3].padStart(2, '0');
-    return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
+    return `${year}-${month}-${day}`;
   }
 
   // Short ISO format: YY-MM-DD or YY-M-D
@@ -74,7 +68,7 @@ function parseDate(dateStr: string): { date: string | null; valid: boolean; raw:
     const year = `20${isoShortMatch[1]}`;
     const month = isoShortMatch[2].padStart(2, '0');
     const day = isoShortMatch[3].padStart(2, '0');
-    return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
+    return `${year}-${month}-${day}`;
   }
 
   // Year-first with slashes: YYYY/MM/DD
@@ -83,11 +77,10 @@ function parseDate(dateStr: string): { date: string | null; valid: boolean; raw:
     const year = ymdSlashMatch[1];
     const month = ymdSlashMatch[2].padStart(2, '0');
     const day = ymdSlashMatch[3].padStart(2, '0');
-    return { date: `${year}-${month}-${day}`, valid: true, raw: dateStr };
+    return `${year}-${month}-${day}`;
   }
 
-  // Slash format: X/X/X - need smart heuristics to determine format
-  // Could be YY/MM/DD, MM/DD/YY, DD/MM/YY, MM/DD/YYYY, DD/MM/YYYY
+  // Slash format with heuristics
   const slashMatch = dateStr.match(/^(\d{1,4})\/(\d{1,2})\/(\d{1,4})$/);
   if (slashMatch) {
     const first = parseInt(slashMatch[1], 10);
@@ -97,250 +90,268 @@ function parseDate(dateStr: string): { date: string | null; valid: boolean; raw:
     const thirdLen = slashMatch[3].length;
 
     let year: number, month: number, day: number;
-
-    // 4-digit year at start: YYYY/MM/DD
     if (firstLen === 4) {
-      year = first;
-      month = second;
-      day = third;
-    }
-    // 4-digit year at end: XX/XX/YYYY
-    else if (thirdLen === 4) {
+      year = first; month = second; day = third;
+    } else if (thirdLen === 4) {
       year = third;
-      // Heuristic: if first > 12, must be DD/MM/YYYY, otherwise MM/DD/YYYY
-      if (first > 12) {
-        day = first;
-        month = second;
-      } else {
-        month = first;
-        day = second;
-      }
-    }
-    // 2-digit year - need to determine position
-    else if (firstLen === 2 && thirdLen === 2) {
-      // Smart heuristics:
-      // - If first > 31, must be YY/MM/DD (year at start)
-      // - If first > 12, must be DD/MM/YY (day at start)
-      // - Otherwise treat as MM/DD/YY (US convention)
-      if (first > 31) {
-        // YY/MM/DD
-        year = 2000 + first;
-        month = second;
-        day = third;
-      } else if (first > 12) {
-        // DD/MM/YY
-        day = first;
-        month = second;
-        year = 2000 + third;
-      } else {
-        // MM/DD/YY (US convention)
-        month = first;
-        day = second;
-        year = 2000 + third;
-      }
-    }
-    // Single digit somewhere
-    else {
-      // Default to MM/DD/YY if year at end seems 2-digit, else YYYY/MM/DD
+      if (first > 12) { day = first; month = second; }
+      else { month = first; day = second; }
+    } else if (firstLen === 2 && thirdLen === 2) {
+      if (first > 31) { year = 2000 + first; month = second; day = third; }
+      else if (first > 12) { day = first; month = second; year = 2000 + third; }
+      else { month = first; day = second; year = 2000 + third; }
+    } else {
       if (thirdLen <= 2) {
-        // XX/XX/YY
-        if (first > 12) {
-          day = first;
-          month = second;
-        } else {
-          month = first;
-          day = second;
-        }
+        if (first > 12) { day = first; month = second; }
+        else { month = first; day = second; }
         year = 2000 + third;
       } else {
-        // Shouldn't happen, but handle it
-        year = first;
-        month = second;
-        day = third;
+        year = first; month = second; day = third;
       }
     }
-
-    return {
-      date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-      valid: true,
-      raw: dateStr
-    };
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
-
-  return { date: null, valid: false, raw: dateStr };
+  return null;
 }
 
-function parseTextDate(parts: string[]): { date: string | null; valid: boolean; partsConsumed: number } {
-  if (parts.length < 2) {
-    return { date: null, valid: false, partsConsumed: 0 };
-  }
+function parseTextDate(parts: string[], startIdx: number, now: ResolvedNow): { date: string; partsConsumed: number } | null {
+  if (startIdx + 1 >= parts.length) return null;
 
-  // Try "Month Day [Year]" format first
-  const monthStr = parts[0].toLowerCase();
-  let month = MONTH_NAMES[monthStr];
-  if (month !== undefined) {
-    const dayStr = parts[1];
-    const dayMatch = dayStr.match(/^(\d{1,2})$/);
+  // "Month Day [Year]"
+  const monthStr = parts[startIdx].toLowerCase();
+  const monthFromName = MONTH_NAMES[monthStr];
+  if (monthFromName !== undefined) {
+    const dayMatch = parts[startIdx + 1].match(/^(\d{1,2})$/);
     if (dayMatch) {
       const day = parseInt(dayMatch[1], 10);
       if (day >= 1 && day <= 31) {
-        // Check for year (4-digit or 2-digit)
-        if (parts.length >= 3) {
-          const yearStr = parts[2];
-          const yearMatch = yearStr.match(/^(\d{4})$/);
-          if (yearMatch) {
-            const year = parseInt(yearMatch[1], 10);
-            const monthPadded = String(month).padStart(2, '0');
-            const dayPadded = String(day).padStart(2, '0');
-            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+        if (startIdx + 2 < parts.length) {
+          const yearStr = parts[startIdx + 2];
+          const yMatch4 = yearStr.match(/^(\d{4})$/);
+          if (yMatch4) {
+            return { date: `${yMatch4[1]}-${String(monthFromName).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 3 };
           }
-          // Try 2-digit year
-          const yearShortMatch = yearStr.match(/^(\d{2})$/);
-          if (yearShortMatch) {
-            const year = 2000 + parseInt(yearShortMatch[1], 10);
-            const monthPadded = String(month).padStart(2, '0');
-            const dayPadded = String(day).padStart(2, '0');
-            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          const yMatch2 = yearStr.match(/^(\d{2})$/);
+          if (yMatch2) {
+            return { date: `${2000 + parseInt(yMatch2[1], 10)}-${String(monthFromName).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 3 };
           }
         }
-
-        // No year provided, infer it
-        const year = inferYear(month, day);
-        const monthPadded = String(month).padStart(2, '0');
-        const dayPadded = String(day).padStart(2, '0');
-        return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+        const year = inferYear(monthFromName, day, now);
+        return { date: `${year}-${String(monthFromName).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 2 };
       }
     }
   }
 
-  // Try "Day Month [Year]" format
-  const dayFirstMatch = parts[0].match(/^(\d{1,2})$/);
+  // "Day Month [Year]"
+  const dayFirstMatch = parts[startIdx].match(/^(\d{1,2})$/);
   if (dayFirstMatch) {
     const day = parseInt(dayFirstMatch[1], 10);
     if (day >= 1 && day <= 31) {
-      const monthStr2 = parts[1].toLowerCase();
-      month = MONTH_NAMES[monthStr2];
-      if (month !== undefined) {
-        // Check for year (4-digit or 2-digit)
-        if (parts.length >= 3) {
-          const yearStr = parts[2];
-          const yearMatch = yearStr.match(/^(\d{4})$/);
-          if (yearMatch) {
-            const year = parseInt(yearMatch[1], 10);
-            const monthPadded = String(month).padStart(2, '0');
-            const dayPadded = String(day).padStart(2, '0');
-            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+      const monthStr2 = parts[startIdx + 1].toLowerCase();
+      const monthFromName2 = MONTH_NAMES[monthStr2];
+      if (monthFromName2 !== undefined) {
+        if (startIdx + 2 < parts.length) {
+          const yearStr = parts[startIdx + 2];
+          const yMatch4 = yearStr.match(/^(\d{4})$/);
+          if (yMatch4) {
+            return { date: `${yMatch4[1]}-${String(monthFromName2).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 3 };
           }
-          // Try 2-digit year
-          const yearShortMatch = yearStr.match(/^(\d{2})$/);
-          if (yearShortMatch) {
-            const year = 2000 + parseInt(yearShortMatch[1], 10);
-            const monthPadded = String(month).padStart(2, '0');
-            const dayPadded = String(day).padStart(2, '0');
-            return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 3 };
+          const yMatch2 = yearStr.match(/^(\d{2})$/);
+          if (yMatch2) {
+            return { date: `${2000 + parseInt(yMatch2[1], 10)}-${String(monthFromName2).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 3 };
           }
         }
-
-        // No year provided, infer it
-        const year = inferYear(month, day);
-        const monthPadded = String(month).padStart(2, '0');
-        const dayPadded = String(day).padStart(2, '0');
-        return { date: `${year}-${monthPadded}-${dayPadded}`, valid: true, partsConsumed: 2 };
+        const year = inferYear(monthFromName2, day, now);
+        return { date: `${year}-${String(monthFromName2).padStart(2, '0')}-${String(day).padStart(2, '0')}`, partsConsumed: 2 };
       }
     }
   }
 
-  return { date: null, valid: false, partsConsumed: 0 };
+  return null;
 }
 
-export function parseTokensInParenGroup(content: string, groupStart: number): ParenGroup {
-  const tokens: ParsedToken[] = [];
-  // Split by comma and/or whitespace
-  const parts = content.split(/[,\s]+/).filter(p => p.length > 0);
+/**
+ * Try to parse a single date (keyword | ISO/slash | text date | relative offset)
+ * starting at parts[startIdx]. Returns the date and parts consumed, or null.
+ */
+function tryParseSingleDate(parts: string[], startIdx: number, now: ResolvedNow): { date: string; partsConsumed: number } | null {
+  if (startIdx >= parts.length) return null;
 
-  let currentPos = 0;
+  // Keywords
+  const kw = resolveKeyword(parts[startIdx], now);
+  if (kw !== null) return { date: kw, partsConsumed: 1 };
+
+  // ISO/slash single-token
+  const iso = parseISODate(parts[startIdx]);
+  if (iso !== null) return { date: iso, partsConsumed: 1 };
+
+  // Text date (multi-token)
+  const textDate = parseTextDate(parts, startIdx, now);
+  if (textDate !== null) return textDate;
+
+  // Relative offset
+  const rel = tryParseRelative(parts, startIdx, now);
+  if (rel !== null) return rel;
+
+  return null;
+}
+
+/**
+ * Pre-tokenize parens content. The base split is by commas/whitespace; then
+ * each part is further split on `~` so that `~` always appears as its own
+ * delimiter token. Examples:
+ *   `~Apr`              → [`~`, `Apr`]
+ *   `Apr 24~Apr 27`     → [`Apr`, `24`, `~`, `Apr`, `27`]  (input parts: [`Apr`, `24~Apr`, `27`])
+ *   `2026-04-24~2026-04-27` → [`2026-04-24`, `~`, `2026-04-27`]
+ */
+function tokenizeContent(content: string): { parts: string[]; partOffsets: number[] } {
+  const parts: string[] = [];
+  const partOffsets: number[] = [];
+  let i = 0;
+  while (i < content.length) {
+    // Skip separators (commas + whitespace)
+    while (i < content.length && (content[i] === ',' || /\s/.test(content[i]))) i++;
+    if (i >= content.length) break;
+
+    // Read until next separator
+    const tokenStart = i;
+    while (i < content.length && content[i] !== ',' && !/\s/.test(content[i])) i++;
+    const raw = content.slice(tokenStart, i);
+
+    // Split this token on `~`, emitting `~` as its own part. Preserve offsets.
+    let cursor = 0;
+    while (cursor < raw.length) {
+      const tildeIdx = raw.indexOf('~', cursor);
+      if (tildeIdx === -1) {
+        const seg = raw.slice(cursor);
+        if (seg.length > 0) {
+          parts.push(seg);
+          partOffsets.push(tokenStart + cursor);
+        }
+        break;
+      }
+      // Pre-tilde segment (may be empty)
+      if (tildeIdx > cursor) {
+        parts.push(raw.slice(cursor, tildeIdx));
+        partOffsets.push(tokenStart + cursor);
+      }
+      // The tilde itself
+      parts.push('~');
+      partOffsets.push(tokenStart + tildeIdx);
+      cursor = tildeIdx + 1;
+    }
+  }
+  return { parts, partOffsets };
+}
+
+export function parseTokensInParenGroup(content: string, groupStart: number, now?: ResolvedNow): ParenGroup {
+  if (!now) now = resolveNow(undefined, undefined);
+  return parseTokensInParenGroupImpl(content, groupStart, now);
+}
+
+function parseTokensInParenGroupImpl(content: string, groupStart: number, now: ResolvedNow): ParenGroup {
+  const tokens: ParsedToken[] = [];
+  const { parts, partOffsets } = tokenizeContent(content);
+
+  // Compute the absolute end of part i.
+  const partEndOffset = (i: number) => partOffsets[i] + parts[i].length;
+  const absStart = (i: number) => groupStart + 1 + partOffsets[i];
+  const absEnd = (i: number) => groupStart + 1 + partEndOffset(i);
+
   const skipIndices = new Set<number>();
 
   for (let i = 0; i < parts.length; i++) {
     if (skipIndices.has(i)) continue;
-
     const part = parts[i];
-    const partStart = content.indexOf(part, currentPos);
-    const absoluteStart = groupStart + 1 + partStart; // +1 for opening paren
-    const absoluteEnd = absoluteStart + part.length;
-    currentPos = partStart + part.length;
 
-    // Check for due date
-    if (part.toLowerCase() === 'due') {
-      // Look for the next part(s) as the date
-      const remainingParts = parts.slice(i + 1);
-      if (remainingParts.length > 0) {
-        // Check for soft date prefix (~)
-        let isSoft = false;
-        let datePartsToCheck = remainingParts;
-        if (remainingParts[0].startsWith('~')) {
-          isSoft = true;
-          // Remove the tilde for parsing
-          datePartsToCheck = [remainingParts[0].slice(1), ...remainingParts.slice(1)];
-        }
-
-        // First try standard date formats (single part)
-        const dateResult = parseDate(datePartsToCheck[0]);
-        if (dateResult.valid) {
-          const nextPartStart = content.indexOf(remainingParts[0], currentPos);
-          const nextAbsoluteEnd = groupStart + 1 + nextPartStart + remainingParts[0].length;
-          tokens.push({
-            type: 'due',
-            value: dateResult.date!,
-            raw: `due ${remainingParts[0]}`,
-            start: absoluteStart,
-            end: nextAbsoluteEnd,
-            soft: isSoft || undefined,
-          });
-          skipIndices.add(i + 1);
-          continue;
-        }
-
-        // Try text date formats (multiple parts: Month Day [Year])
-        const textDateResult = parseTextDate(datePartsToCheck);
-        if (textDateResult.valid) {
-          // Calculate the end position
-          let rawParts = [`due`];
-          let endPos = currentPos;
-          for (let j = 0; j < textDateResult.partsConsumed; j++) {
-            rawParts.push(remainingParts[j]);
-            skipIndices.add(i + 1 + j);
-            endPos = content.indexOf(remainingParts[j], endPos) + remainingParts[j].length;
-          }
-          const finalAbsoluteEnd = groupStart + 1 + endPos;
-          tokens.push({
-            type: 'due',
-            value: textDateResult.date!,
-            raw: rawParts.join(' '),
-            start: absoluteStart,
-            end: finalAbsoluteEnd,
-            soft: isSoft || undefined,
-          });
-          continue;
-        }
+    // Standalone `~` here means we encountered a tilde without a leading date —
+    // either a soft-prefix introducer (`~<date>`) or an orphan. Try as soft prefix.
+    if (part === '~') {
+      // Soft prefix: try to consume a single date (no span — span would have a leading date).
+      const inner = tryParseSingleDate(parts, i + 1, now);
+      if (inner !== null) {
+        const startIndex = i;
+        const endIndex = i + inner.partsConsumed; // last consumed index = endIndex
+        // Mark consumed
+        for (let j = i + 1; j <= endIndex; j++) skipIndices.add(j);
+        const raw = content.slice(partOffsets[startIndex], partEndOffset(endIndex));
+        tokens.push({
+          type: 'due',
+          value: inner.date,
+          raw,
+          start: absStart(startIndex),
+          end: absEnd(endIndex),
+          soft: true,
+        });
+        continue;
       }
+      // Orphan `~` — drop silently.
       continue;
     }
 
-    // Check for priority
+    // 'due' keyword
+    if (part.toLowerCase() === 'due') {
+      // Look ahead. After `due` we may have `~<date>`, `<date>~<date>`, or `<date>`.
+      let cursor = i + 1;
+      let isSoftPrefix = false;
+      if (cursor < parts.length && parts[cursor] === '~') {
+        isSoftPrefix = true;
+        cursor++;
+      }
+      const first = tryParseSingleDate(parts, cursor, now);
+      if (first === null) continue;
+
+      let endIndex = cursor + first.partsConsumed - 1;
+      let dateStart: string | null = null;
+      let dueDate = first.date;
+      let isSoft = isSoftPrefix;
+
+      // Span continuation: `<date>~<date>`
+      if (endIndex + 1 < parts.length && parts[endIndex + 1] === '~') {
+        const second = tryParseSingleDate(parts, endIndex + 2, now);
+        if (second !== null) {
+          if (isSoftPrefix) {
+            // `due ~start~end` is malformed; reject (treat as if span didn't parse).
+            // Fall through with the first date only.
+          } else {
+            dateStart = first.date;
+            dueDate = second.date;
+            endIndex = endIndex + 1 + second.partsConsumed; // skip the `~` and the second date's parts
+            isSoft = true; // span implies soft
+          }
+        }
+      }
+
+      // Mark all consumed including 'due' and optional leading '~'
+      for (let j = i; j <= endIndex; j++) skipIndices.add(j);
+
+      const raw = content.slice(partOffsets[i], partEndOffset(endIndex));
+      tokens.push({
+        type: 'due',
+        value: dueDate,
+        raw,
+        start: absStart(i),
+        end: absEnd(endIndex),
+        soft: isSoft || undefined,
+        dateStart: dateStart ?? undefined,
+      });
+      continue;
+    }
+
+    // priority
     const priorityMatch = part.match(PRIORITY_REGEX);
     if (priorityMatch) {
       tokens.push({
         type: 'priority',
         value: parseInt(priorityMatch[1], 10),
         raw: part,
-        start: absoluteStart,
-        end: absoluteEnd,
+        start: absStart(i),
+        end: absEnd(i),
       });
       continue;
     }
 
-    // Check for estimate
+    // estimate (must run before relative-date so bare 2d/2h/2m stay as estimates)
     const estimateMatch = part.match(ESTIMATE_REGEX);
     if (estimateMatch) {
       const num = parseInt(estimateMatch[1], 10);
@@ -356,106 +367,80 @@ export function parseTokensInParenGroup(content: string, groupStart: number): Pa
         type: 'estimate',
         value: minutes,
         raw: part,
-        start: absoluteStart,
-        end: absoluteEnd,
+        start: absStart(i),
+        end: absEnd(i),
       });
       continue;
     }
 
-    // Check for progress states
+    // progress (single word)
     const partLower = part.toLowerCase();
-
-    // Check for single-word progress states: done, deleted, blocked
     if (PROGRESS_STATES.has(partLower)) {
       tokens.push({
         type: 'progress',
         value: partLower,
         raw: part,
-        start: absoluteStart,
-        end: absoluteEnd,
+        start: absStart(i),
+        end: absEnd(i),
       });
       continue;
     }
 
-    // Check for multi-word progress state: "in progress"
-    if (partLower === 'in') {
-      const remainingParts = parts.slice(i + 1);
-      if (remainingParts.length > 0 && remainingParts[0].toLowerCase() === 'progress') {
-        const nextPartStart = content.indexOf(remainingParts[0], currentPos);
-        const nextAbsoluteEnd = groupStart + 1 + nextPartStart + remainingParts[0].length;
-        tokens.push({
-          type: 'progress',
-          value: 'in progress',
-          raw: `${part} ${remainingParts[0]}`,
-          start: absoluteStart,
-          end: nextAbsoluteEnd,
-        });
-        skipIndices.add(i + 1);
-        continue;
-      }
+    // progress: "in progress" — but `in` also introduces relative dates.
+    // Disambiguate by lookahead: if next part is "progress", it's a progress state.
+    if (partLower === 'in' && i + 1 < parts.length && parts[i + 1].toLowerCase() === 'progress') {
+      tokens.push({
+        type: 'progress',
+        value: 'in progress',
+        raw: `${part} ${parts[i + 1]}`,
+        start: absStart(i),
+        end: absEnd(i + 1),
+      });
+      skipIndices.add(i + 1);
+      continue;
     }
 
-    // Check for hashtags
+    // hashtag
     const hashtagMatch = part.match(HASHTAG_REGEX);
     if (hashtagMatch) {
       tokens.push({
         type: 'hashtag',
         value: hashtagMatch[1].toLowerCase(),
         raw: part,
-        start: absoluteStart,
-        end: absoluteEnd,
+        start: absStart(i),
+        end: absEnd(i),
       });
       continue;
     }
 
-    // Check for standalone dates (without "due" prefix)
-    // Check for soft date prefix (~)
-    let isSoftStandalone = false;
-    let partToCheck = part;
-    if (part.startsWith('~')) {
-      isSoftStandalone = true;
-      partToCheck = part.slice(1);
-    }
+    // Standalone date / relative / span
+    const first = tryParseSingleDate(parts, i, now);
+    if (first !== null) {
+      let endIndex = i + first.partsConsumed - 1;
+      let dateStart: string | null = null;
+      let dueDate = first.date;
+      let isSoft = false;
 
-    // First try standard date formats (single part)
-    const standaloneDateResult = parseDate(partToCheck);
-    if (standaloneDateResult.valid) {
-      tokens.push({
-        type: 'due',
-        value: standaloneDateResult.date!,
-        raw: part,
-        start: absoluteStart,
-        end: absoluteEnd,
-        soft: isSoftStandalone || undefined,
-      });
-      continue;
-    }
-
-    // Try text date formats starting with this part (Month Day [Year] or Day Month [Year])
-    const remainingPartsForDate = parts.slice(i);
-    // For text dates, check if first part starts with ~
-    let datePartsForTextParsing = remainingPartsForDate;
-    if (isSoftStandalone) {
-      datePartsForTextParsing = [partToCheck, ...remainingPartsForDate.slice(1)];
-    }
-    const standaloneTextDateResult = parseTextDate(datePartsForTextParsing);
-    if (standaloneTextDateResult.valid) {
-      // Calculate the end position
-      let rawParts: string[] = [];
-      let endPos = partStart;
-      for (let j = 0; j < standaloneTextDateResult.partsConsumed; j++) {
-        rawParts.push(remainingPartsForDate[j]);
-        if (j > 0) skipIndices.add(i + j);
-        endPos = content.indexOf(remainingPartsForDate[j], endPos) + remainingPartsForDate[j].length;
+      if (endIndex + 1 < parts.length && parts[endIndex + 1] === '~') {
+        const second = tryParseSingleDate(parts, endIndex + 2, now);
+        if (second !== null) {
+          dateStart = first.date;
+          dueDate = second.date;
+          endIndex = endIndex + 1 + second.partsConsumed;
+          isSoft = true;
+        }
       }
-      const finalAbsoluteEnd = groupStart + 1 + endPos;
+
+      for (let j = i; j <= endIndex; j++) skipIndices.add(j);
+      const raw = content.slice(partOffsets[i], partEndOffset(endIndex));
       tokens.push({
         type: 'due',
-        value: standaloneTextDateResult.date!,
-        raw: rawParts.join(' '),
-        start: absoluteStart,
-        end: finalAbsoluteEnd,
-        soft: isSoftStandalone || undefined,
+        value: dueDate,
+        raw,
+        start: absStart(i),
+        end: absEnd(endIndex),
+        soft: isSoft || undefined,
+        dateStart: dateStart ?? undefined,
       });
       continue;
     }
@@ -463,20 +448,25 @@ export function parseTokensInParenGroup(content: string, groupStart: number): Pa
 
   return {
     start: groupStart,
-    end: groupStart + content.length + 2, // +2 for parens
+    end: groupStart + content.length + 2,
     content,
     tokens,
     hasRecognizedTokens: tokens.length > 0,
   };
 }
 
-export function extractParenGroups(line: string, lineStart: number): ParenGroup[] {
+export function extractParenGroups(line: string, _lineStart: number, now?: ResolvedNow): ParenGroup[] {
+  if (!now) now = resolveNow(undefined, undefined);
+  return extractParenGroupsImpl(line, _lineStart, now);
+}
+
+function extractParenGroupsImpl(line: string, _lineStart: number, now: ResolvedNow): ParenGroup[] {
   const groups: ParenGroup[] = [];
   let i = 0;
 
   while (i < line.length) {
     if (line[i] === '(') {
-      const start = i;  // Position within the line (content)
+      const start = i;
       let depth = 1;
       i++;
       while (i < line.length && depth > 0) {
@@ -486,10 +476,9 @@ export function extractParenGroups(line: string, lineStart: number): ParenGroup[
       }
       if (depth === 0) {
         const content = line.slice(start + 1, i - 1);
-        // Pass the relative position within content string
-        const group = parseTokensInParenGroup(content, start);
-        group.start = start;  // Store relative position
-        group.end = i;        // Store relative position
+        const group = parseTokensInParenGroup(content, start, now);
+        group.start = start;
+        group.end = i;
         groups.push(group);
       }
     } else {
@@ -501,26 +490,21 @@ export function extractParenGroups(line: string, lineStart: number): ParenGroup[
 }
 
 function buildTitleText(rawText: string, groups: ParenGroup[]): string {
-  // Remove groups that have recognized tokens
-  // Process in reverse order to maintain correct positions
   const sortedGroups = [...groups]
     .filter(g => g.hasRecognizedTokens)
     .sort((a, b) => b.start - a.start);
 
   let result = rawText;
   for (const group of sortedGroups) {
-    const before = result.slice(0, group.start);
-    const after = result.slice(group.end);
-    result = before + after;
+    result = result.slice(0, group.start) + result.slice(group.end);
   }
-
-  // Clean up extra whitespace
   return result.replace(/\s+/g, ' ').trim();
 }
 
 function buildMetadata(groups: ParenGroup[]): ItemMetadata {
   const metadata: ItemMetadata = {
     due: null,
+    due_start: null,
     due_soft: null,
     priority: null,
     estimate_minutes: null,
@@ -529,17 +513,14 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
     effective_hashtags: [],
   };
 
-  // Collect all tokens from all groups
   const allTokens = groups.flatMap(g => g.tokens);
-
-  // Collect unique hashtags (sorted alphabetically)
   const hashtagSet = new Set<string>();
 
-  // Last occurrence wins for non-hashtag tokens
   for (const token of allTokens) {
     switch (token.type) {
       case 'due':
         metadata.due = token.value as string;
+        metadata.due_start = token.dateStart ?? null;
         metadata.due_soft = token.soft ?? null;
         break;
       case 'priority':
@@ -557,43 +538,36 @@ function buildMetadata(groups: ParenGroup[]): ItemMetadata {
     }
   }
 
-  // Store sorted unique hashtags
   metadata.hashtags = [...hashtagSet].sort();
-
   return metadata;
 }
 
-export function parse(text: string): ParseResult {
+export function parse(text: string, options?: ParseOptions): ParseResult {
+  const now = resolveNow(options?.now, options?.settings);
   const lines = text.split('\n');
   const items: ItemNode[] = [];
   const warnings: Warning[] = [];
   let nextId = 0;
   let offset = 0;
 
-  // Stack to track current context: [itemId, indentLevel]
   const listStack: { id: string; indent: number }[] = [];
   let currentHeadingId: string | null = null;
   const rootIds: string[] = [];
-
-  // Map id -> children for building the tree
   const childrenMap: Map<string, string[]> = new Map();
 
-  // First pass: identify all items and their basic info
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
     const lineStart = offset;
     const lineEnd = offset + line.length;
 
-    // Check for heading
     const headingMatch = line.match(HEADING_REGEX);
     if (headingMatch) {
       const level = headingMatch[1].length;
       const content = headingMatch[2];
 
-      // Close any open list context
       listStack.length = 0;
 
-      const groups = extractParenGroups(content, lineStart + headingMatch[1].length + 1);
+      const groups = extractParenGroups(content, lineStart + headingMatch[1].length + 1, now);
       const titleText = buildTitleText(content, groups);
       const metadata = buildMetadata(groups);
 
@@ -622,7 +596,6 @@ export function parse(text: string): ParseResult {
       continue;
     }
 
-    // Check for list item
     const listMatch = line.match(LIST_ITEM_REGEX);
     if (listMatch) {
       const indent = listMatch[1].length;
@@ -630,11 +603,10 @@ export function parse(text: string): ParseResult {
       const content = listMatch[3];
 
       const contentStart = lineStart + indent + marker.length + 1;
-      const groups = extractParenGroups(content, contentStart);
+      const groups = extractParenGroups(content, contentStart, now);
       const titleText = buildTitleText(content, groups);
       const metadata = buildMetadata(groups);
 
-      // Determine marker type and sequence number
       const isNumbered = /^\d+\.$/.test(marker);
       const markerType: 'bullet' | 'numbered' = isNumbered ? 'numbered' : 'bullet';
       const sequenceNumber = isNumbered ? parseInt(marker.slice(0, -1), 10) : undefined;
@@ -659,21 +631,16 @@ export function parse(text: string): ParseResult {
       items.push(item);
       childrenMap.set(id, []);
 
-      // Determine parent
-      // Pop items from stack that are at same or greater indent
       while (listStack.length > 0 && listStack[listStack.length - 1].indent >= indent) {
         listStack.pop();
       }
 
       if (listStack.length > 0) {
-        // Parent is the top of the stack
         const parentId = listStack[listStack.length - 1].id;
         childrenMap.get(parentId)!.push(id);
       } else if (currentHeadingId !== null) {
-        // Parent is current heading
         childrenMap.get(currentHeadingId)!.push(id);
       } else {
-        // No parent, it's a root
         rootIds.push(id);
       }
 
@@ -683,7 +650,6 @@ export function parse(text: string): ParseResult {
       continue;
     }
 
-    // Not a heading or list item - could be a comment or blank line
     offset = lineEnd + 1;
   }
 
@@ -698,32 +664,23 @@ export function parse(text: string): ParseResult {
     const lineStart = offset;
     const lineEnd = offset + line.length;
 
-    // Check if this line starts a new item
     const headingMatch = line.match(HEADING_REGEX);
     const listMatch = line.match(LIST_ITEM_REGEX);
 
     if (headingMatch || listMatch) {
-      currentItemIndex = items.findIndex(
-        item => item.item_span[0] === lineStart
-      );
+      currentItemIndex = items.findIndex(item => item.item_span[0] === lineStart);
       hasStartedComments = false;
       blankAfterCommentStart = false;
       offset = lineEnd + 1;
       continue;
     }
 
-    // Check for blank line
     if (line.trim() === '') {
-      if (hasStartedComments) {
-        // Blank line after comments started = stop collecting
-        blankAfterCommentStart = true;
-      }
-      // Blank line before comments started (e.g., after heading) = ignore
+      if (hasStartedComments) blankAfterCommentStart = true;
       offset = lineEnd + 1;
       continue;
     }
 
-    // Non-blank, non-item line - potential comment
     if (currentItemIndex >= 0 && !blankAfterCommentStart) {
       const currentItem = items[currentItemIndex];
       currentItem.comments.push(line.trim());
@@ -734,12 +691,10 @@ export function parse(text: string): ParseResult {
     offset = lineEnd + 1;
   }
 
-  // Build children arrays and compute subtree spans
   for (const item of items) {
     item.children = childrenMap.get(item.id) || [];
   }
 
-  // Compute subtree spans (post-order traversal)
   function computeSubtreeSpan(id: string): [number, number] {
     const item = items.find(i => i.id === id)!;
     let end = item.item_span[1];
@@ -757,18 +712,12 @@ export function parse(text: string): ParseResult {
     computeSubtreeSpan(rootId);
   }
 
-  // Update root_ids to only include top-level items
   const actualRootIds = items
-    .filter(item => {
-      // Check if this item is a child of any other item
-      return !items.some(other => other.children.includes(item.id));
-    })
+    .filter(item => !items.some(other => other.children.includes(item.id)))
     .map(item => item.id);
 
-  // Compute effective_hashtags through inheritance (pre-order traversal)
   function computeEffectiveHashtags(id: string, parentEffectiveHashtags: string[]): void {
     const item = items.find(i => i.id === id)!;
-    // Merge parent's effective_hashtags with own hashtags, deduplicate and sort
     const combined = new Set([...parentEffectiveHashtags, ...item.metadata.hashtags]);
     item.metadata.effective_hashtags = [...combined].sort();
 
@@ -782,10 +731,7 @@ export function parse(text: string): ParseResult {
   }
 
   return {
-    ast: {
-      items,
-      root_ids: actualRootIds,
-    },
+    ast: { items, root_ids: actualRootIds },
     warnings,
   };
 }

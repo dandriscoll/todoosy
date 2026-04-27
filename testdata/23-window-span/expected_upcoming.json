@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "due": "2026-05-08",
+      "priority": null,
+      "path": "Tasks > ISO span"
+    },
+    {
+      "id": "2",
+      "due": "2026-05-08",
+      "priority": null,
+      "path": "Tasks > Text span"
+    },
+    {
+      "id": "3",
+      "due": "2026-05-08",
+      "priority": null,
+      "path": "Tasks > Day-first span"
+    },
+    {
+      "id": "4",
+      "due": "2026-05-08",
+      "priority": null,
+      "path": "Tasks > Span with due"
+    },
+    {
+      "id": "5",
+      "due": "2026-05-08",
+      "priority": null,
+      "path": "Tasks > Mixed ISO and text"
+    },
+    {
+      "id": "6",
+      "due": "2026-04-27",
+      "priority": null,
+      "path": "Tasks > Single soft"
+    },
+    {
+      "id": "7",
+      "due": "2026-04-27",
+      "priority": null,
+      "path": "Tasks > Hard deadline"
+    }
+  ]
+}
