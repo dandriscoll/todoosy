@@ -35,6 +35,24 @@ function loadJson(testCase: string, filename: string): unknown | null {
   return null;
 }
 
+/**
+ * If the fixture has `now.txt`, parse its first non-empty line as an ISO 8601
+ * datetime and return it. Used to anchor "today" so that fixtures with text
+ * dates lacking a year resolve deterministically. Returns undefined when the
+ * file is absent.
+ */
+function loadFixtureNow(testCase: string): Date | undefined {
+  const content = loadFile(testCase, 'now.txt');
+  if (!content) return undefined;
+  const line = content.split('\n').map(s => s.trim()).find(s => s.length > 0);
+  if (!line) return undefined;
+  const d = new Date(line);
+  if (isNaN(d.getTime())) {
+    throw new Error(`Fixture ${testCase}: now.txt has invalid ISO datetime: ${line}`);
+  }
+  return d;
+}
+
 describe('Todoosy Golden Tests', () => {
   const testCases = getTestCases();
 
@@ -48,7 +66,8 @@ describe('Todoosy Golden Tests', () => {
         return;
       }
 
-      const { ast } = parse(input);
+      const fixtureNow = loadFixtureNow(testCase);
+      const { ast } = parse(input, fixtureNow ? { now: fixtureNow } : undefined);
 
       // Compare items count
       expect(ast.items.length).toBe((expectedAst as any).items.length);
@@ -89,7 +108,8 @@ describe('Todoosy Golden Tests', () => {
         return;
       }
 
-      const formatted = format(input);
+      const fixtureNow = loadFixtureNow(testCase);
+      const formatted = format(input, undefined, undefined, fixtureNow ? { now: fixtureNow } : undefined);
       expect(formatted).toBe(expectedFormatted);
     });
   });
@@ -106,7 +126,8 @@ describe('Todoosy Golden Tests', () => {
         return;
       }
 
-      const result = lint(input, scheme);
+      const fixtureNow = loadFixtureNow(testCase);
+      const result = lint(input, scheme, undefined, fixtureNow ? { now: fixtureNow } : undefined);
 
       // Compare warning codes
       const actualCodes = result.warnings.map(w => w.code).sort();
@@ -127,7 +148,8 @@ describe('Todoosy Golden Tests', () => {
         return;
       }
 
-      const result = queryUpcoming(input, scheme);
+      const fixtureNow = loadFixtureNow(testCase);
+      const result = queryUpcoming(input, scheme, fixtureNow ? { now: fixtureNow } : undefined);
 
       // Compare items count
       expect(result.items.length).toBe((expectedUpcoming as any).items.length);

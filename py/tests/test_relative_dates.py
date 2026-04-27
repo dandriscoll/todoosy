@@ -137,3 +137,18 @@ class TestTimezoneAwareToday:
         instant = datetime(2026, 4, 27, 23, 30, tzinfo=timezone.utc)
         r = parse('- Task (due today)\n# Misc\n', now=instant)
         assert r.ast.items[0].metadata.due == '2026-04-27'
+
+
+class TestFixtureNowInjection:
+    """Cover the test runner's now.txt mechanism end-to-end: fixtures with
+    text dates whose year-inference depends on real "today" must be stable
+    across real-time drift."""
+
+    def test_year_inference_anchored_by_fixture_now(self):
+        # Anchor "now" far in the future. A January text date should infer to
+        # that future year, not 2026.
+        future_now = datetime(2030, 6, 15, 0, 0, tzinfo=timezone.utc)
+        r = parse('- Task (Jan 13)\n# Misc\n', now=future_now)
+        # Jan 13, 2030 is more than 3 months in the past from Jun 15, 2030, so
+        # year inference rolls forward to 2031.
+        assert r.ast.items[0].metadata.due == '2031-01-13'

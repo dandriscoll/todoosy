@@ -46,6 +46,26 @@ def load_json(test_case: str, filename: str):
     return None
 
 
+def load_fixture_now(test_case: str):
+    """If the fixture has `now.txt`, parse the first non-empty line as an ISO 8601
+    datetime. Returns a `datetime` or None when absent. Used to anchor "today"
+    so fixtures with text dates lacking a year resolve deterministically.
+    """
+    from datetime import datetime
+    content = load_file(test_case, 'now.txt')
+    if not content:
+        return None
+    line = next((s.strip() for s in content.splitlines() if s.strip()), None)
+    if not line:
+        return None
+    # `Z` suffix: Python <3.11 fromisoformat doesn't accept it.
+    iso = line.replace('Z', '+00:00')
+    try:
+        return datetime.fromisoformat(iso)
+    except ValueError as e:
+        raise ValueError(f"Fixture {test_case}: now.txt has invalid ISO datetime: {line}") from e
+
+
 class TestParser:
     @pytest.mark.parametrize('test_case', get_test_cases())
     def test_parse(self, test_case):
@@ -55,7 +75,8 @@ class TestParser:
         if not input_md or not expected_ast:
             pytest.skip(f'Missing input or expected_ast for {test_case}')
 
-        result = parse(input_md)
+        fixture_now = load_fixture_now(test_case)
+        result = parse(input_md, now=fixture_now) if fixture_now else parse(input_md)
         ast = result.ast
 
         # Compare items count
@@ -88,7 +109,8 @@ class TestFormatter:
         if not input_md or not expected_formatted:
             pytest.skip(f'Missing input or expected_formatted for {test_case}')
 
-        formatted = format(input_md)
+        fixture_now = load_fixture_now(test_case)
+        formatted = format(input_md, now=fixture_now) if fixture_now else format(input_md)
         assert formatted == expected_formatted
 
 
@@ -103,7 +125,8 @@ class TestLinter:
         if not input_md or not expected_warnings:
             pytest.skip(f'Missing input or expected_warnings for {test_case}')
 
-        result = lint(input_md, scheme)
+        fixture_now = load_fixture_now(test_case)
+        result = lint(input_md, scheme, now=fixture_now) if fixture_now else lint(input_md, scheme)
 
         actual_codes = sorted([w.code for w in result.warnings])
         expected_codes = sorted([w['code'] for w in expected_warnings.get('warnings', [])])
@@ -121,7 +144,8 @@ class TestQueryUpcoming:
         if not input_md or not expected_upcoming:
             pytest.skip(f'Missing input or expected_upcoming for {test_case}')
 
-        result = query_upcoming(input_md, scheme)
+        fixture_now = load_fixture_now(test_case)
+        result = query_upcoming(input_md, scheme, now=fixture_now) if fixture_now else query_upcoming(input_md, scheme)
 
         assert len(result.items) == len(expected_upcoming['items'])
 
